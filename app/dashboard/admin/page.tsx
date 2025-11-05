@@ -34,7 +34,7 @@ export default async function AdminDashboard() {
   // Get active readers (students who have started at least one book)
   const activeReaders = await db.student.count({
     where: {
-      studentBooks: {
+      books: {
         some: {},
       },
     },
@@ -64,7 +64,7 @@ export default async function AdminDashboard() {
   const topStudents = await db.student.findMany({
     include: {
       user: true,
-      studentBooks: {
+      books: {
         where: { completed: true },
       },
     },
@@ -204,7 +204,7 @@ export default async function AdminDashboard() {
                       <div>
                         <p className="font-semibold text-gray-800">{student.user.name}</p>
                         <p className="text-sm text-gray-500">
-                          {student.studentBooks.length} books completed
+                          {student.books.length} books completed
                         </p>
                       </div>
                     </div>

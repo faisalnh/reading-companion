@@ -16,12 +16,12 @@ export default async function TeacherDashboard() {
     include: {
       classes: {
         include: {
-          classStudents: {
+          students: {
             include: {
               student: {
                 include: {
                   user: true,
-                  studentBooks: {
+                  books: {
                     where: {
                       completed: true,
                     },
@@ -30,7 +30,7 @@ export default async function TeacherDashboard() {
               },
             },
           },
-          classBooks: {
+          books: {
             include: {
               book: true,
             },
@@ -47,20 +47,20 @@ export default async function TeacherDashboard() {
   // Calculate stats
   const totalClasses = teacher.classes.length;
   const totalStudents = teacher.classes.reduce(
-    (sum, cls) => sum + cls.classStudents.length,
+    (sum, cls) => sum + cls.students.length,
     0
   );
   const totalBooksAssigned = teacher.classes.reduce(
-    (sum, cls) => sum + cls.classBooks.length,
+    (sum, cls) => sum + cls.books.length,
     0
   );
 
   // Get recent activity (students who completed books recently)
   const recentActivity = teacher.classes
     .flatMap((cls) =>
-      cls.classStudents.map((cs) => ({
+      cls.students.map((cs) => ({
         studentName: cs.student.user.name || 'Unknown',
-        booksCompleted: cs.student.studentBooks.length,
+        booksCompleted: cs.student.books.length,
         points: cs.student.points,
         className: cls.name,
       }))
@@ -142,19 +142,19 @@ export default async function TeacherDashboard() {
                     <p className="text-sm text-gray-500">Grade {cls.grade}</p>
                   </div>
                   <div className="bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-xs font-semibold">
-                    {cls.classStudents.length} students
+                    {cls.students.length} students
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-600">Assigned Books</span>
-                    <span className="font-semibold text-gray-800">{cls.classBooks.length}</span>
+                    <span className="font-semibold text-gray-800">{cls.books.length}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-600">Active Readers</span>
                     <span className="font-semibold text-gray-800">
-                      {cls.classStudents.filter((cs) => cs.student.studentBooks.length > 0).length}
+                      {cls.students.filter((cs) => cs.student.books.length > 0).length}
                     </span>
                   </div>
                 </div>

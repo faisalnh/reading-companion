@@ -14,7 +14,7 @@ export default async function StudentDashboard() {
   const student = await db.student.findUnique({
     where: { userId: session.user.id },
     include: {
-      studentBooks: {
+      books: {
         include: {
           book: true,
         },
@@ -22,7 +22,7 @@ export default async function StudentDashboard() {
           startedAt: 'desc',
         },
       },
-      studentAchievements: {
+      achievements: {
         include: {
           achievement: true,
         },
@@ -35,7 +35,7 @@ export default async function StudentDashboard() {
         include: {
           class: {
             include: {
-              classBooks: {
+              books: {
                 include: {
                   book: true,
                 },
@@ -53,16 +53,16 @@ export default async function StudentDashboard() {
 
   // Get all assigned books from classes
   const assignedBooks = student.classes.flatMap((cs) =>
-    cs.class.classBooks.map((cb) => cb.book)
+    cs.class.books.map((cb) => cb.book)
   );
 
   // Filter out books already in reading list
-  const readingBookIds = new Set(student.studentBooks.map((sb) => sb.bookId));
+  const readingBookIds = new Set(student.books.map((sb) => sb.bookId));
   const availableBooks = assignedBooks.filter((book) => !readingBookIds.has(book.id));
 
   // Calculate stats
-  const completedBooks = student.studentBooks.filter((sb) => sb.completed).length;
-  const inProgressBooks = student.studentBooks.filter((sb) => !sb.completed).length;
+  const completedBooks = student.books.filter((sb) => sb.completed).length;
+  const inProgressBooks = student.books.filter((sb) => !sb.completed).length;
 
   return (
     <div className="space-y-8">
@@ -98,7 +98,7 @@ export default async function StudentDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-sm font-medium">Achievements</p>
-              <p className="text-3xl font-bold text-accent-600">{student.studentAchievements.length}</p>
+              <p className="text-3xl font-bold text-accent-600">{student.achievements.length}</p>
             </div>
             <div className="text-5xl">🏆</div>
           </div>
@@ -112,7 +112,7 @@ export default async function StudentDashboard() {
             <span>📖</span> Currently Reading
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {student.studentBooks
+            {student.books
               .filter((sb) => !sb.completed)
               .map((studentBook) => (
                 <div
@@ -136,7 +136,7 @@ export default async function StudentDashboard() {
                         <div
                           className="bg-gradient-to-r from-primary-500 to-secondary-500 h-2 rounded-full"
                           style={{
-                            width: `${(studentBook.currentPage / studentBook.book.pageCount) * 100}%`,
+                            width: `${(studentBook.currentPage / (studentBook.book.pageCount || 1)) * 100}%`,
                           }}
                         />
                       </div>
@@ -191,7 +191,7 @@ export default async function StudentDashboard() {
       )}
 
       {/* Recent Achievements */}
-      {student.studentAchievements.length > 0 && (
+      {student.achievements.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
@@ -205,7 +205,7 @@ export default async function StudentDashboard() {
             </Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {student.studentAchievements.slice(0, 3).map((sa) => (
+            {student.achievements.slice(0, 3).map((sa) => (
               <div
                 key={sa.id}
                 className="bg-white rounded-2xl p-6 shadow-lg text-center hover:shadow-xl transition-shadow"

@@ -166,6 +166,7 @@ model Book {
   // Relations
   students StudentBook[]
   quizzes  Quiz[]
+  classes  ClassBook[]
 
   @@index([category])
   @@index([grade])
@@ -293,9 +294,11 @@ model ClassBook {
   classId    String
   class      Class     @relation(fields: [classId], references: [id], onDelete: Cascade)
   bookId     String
+  book       Book      @relation(fields: [bookId], references: [id], onDelete: Cascade)
   assignedAt DateTime  @default(now())
   dueDate    DateTime?
 
   @@unique([classId, bookId])
   @@index([classId])
+  @@index([bookId])
 }

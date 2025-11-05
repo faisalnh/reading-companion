@@ -13,7 +13,7 @@ export default async function LibrarianDashboard() {
   // Get all books and statistics
   const books = await db.book.findMany({
     include: {
-      studentBooks: {
+      students: {
         include: {
           student: {
             include: {
@@ -22,7 +22,6 @@ export default async function LibrarianDashboard() {
           },
         },
       },
-      classBooks: true,
     },
     orderBy: {
       createdAt: 'desc',
@@ -31,14 +30,15 @@ export default async function LibrarianDashboard() {
 
   // Calculate stats
   const totalBooks = books.length;
-  const totalReaders = new Set(books.flatMap((b) => b.studentBooks.map((sb) => sb.studentId)))
+  const totalReaders = new Set(books.flatMap((b) => b.students.map((sb) => sb.studentId)))
     .size;
-  const totalAssignments = books.reduce((sum, book) => sum + book.classBooks.length, 0);
-  const totalReads = books.reduce((sum, book) => sum + book.studentBooks.length, 0);
+  const totalAssignments = await db.classBook.count();
+  const totalReads = books.reduce((sum, book) => sum + book.students.length, 0);
 
   // Get category distribution
   const categoryStats = books.reduce((acc, book) => {
-    acc[book.category] = (acc[book.category] || 0) + 1;
+    const category = book.category || 'Uncategorized';
+    acc[category] = (acc[category] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
@@ -50,7 +50,7 @@ export default async function LibrarianDashboard() {
   const popularBooks = books
     .map((book) => ({
       ...book,
-      readerCount: book.studentBooks.length,
+      readerCount: book.students.length,
     }))
     .sort((a, b) => b.readerCount - a.readerCount)
     .slice(0, 5);
