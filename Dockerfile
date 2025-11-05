@@ -1,4 +1,4 @@
-# Reading Buddy - Dockerfile for Coolify Deployment
+# Reading Buddy - Dockerfile for Deployment
 # Multi-stage build for optimized production image
 
 # Stage 1: Dependencies

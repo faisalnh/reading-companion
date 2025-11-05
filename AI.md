@@ -16,7 +16,7 @@ Reading Buddy is a web-based e-library application for K-12 educational environm
 - **Styling:** Tailwind CSS
 - **PDF Rendering:** react-pdf
 - **AI Integration:** Google Gemini API (AI Studio)
-- **Deployment:** Coolify (Docker-based)
+- **Deployment:** Docker-based
 
 ## User Roles & Permissions
 
@@ -65,7 +65,7 @@ Reading Buddy is a web-based e-library application for K-12 educational environm
 - NextAuth.js configuration with Google OAuth
 
 ### 📋 Pending
-- Dockerfile for Coolify deployment
+- Dockerfile for deployment
 - Database seed script with sample data
 - Role-based layouts and navigation
 - Auth pages (login/signup)
@@ -301,7 +301,7 @@ types/                     # TypeScript definitions
 - [ ] Define complete Prisma schema with all models
 - [ ] Set up NextAuth with Google OAuth provider
 - [ ] Create .env.example template
-- [ ] Create Dockerfile and docker-compose.yml for Coolify deployment
+- [ ] Create Dockerfile and docker-compose.yml for deployment
 - [ ] Implement database seed script with sample books and users
 - [ ] Create role-based middleware for route protection
 - [ ] Build authentication UI (login page)
@@ -360,4 +360,4 @@ npm run build
 5. **Keep the design fun and colorful** - this is for kids!
 6. Sample PDFs with metadata are available - ask user for location when implementing book upload
 7. User has Google OAuth credentials ready for NextAuth setup
-8. Deployment target is Coolify - ensure Docker compatibility
+8. Deployment target is Docker - ensure Docker compatibility
