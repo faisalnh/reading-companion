@@ -11,12 +11,12 @@
     "lint": "next lint",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
-    "db:seed": "prisma db seed",
+    "db:seed": "node prisma/seed.js",
     "db:studio": "prisma studio",
     "db:init": "bash scripts/init-db.sh"
   },
   "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "seed": "node prisma/seed.js"
   },
   "keywords": [],
   "author": "",

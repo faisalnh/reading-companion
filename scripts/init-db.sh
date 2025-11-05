@@ -13,21 +13,29 @@ echo "✅ Database URL is configured"
 
 # Generate Prisma Client
 echo "📦 Generating Prisma Client..."
-npx prisma generate
+npx prisma generate --schema prisma/schema.prisma
 
 # Push database schema (creates tables if they don't exist)
 echo "🔄 Pushing database schema..."
-npx prisma db push --accept-data-loss --skip-generate
+npx prisma db push --schema prisma/schema.prisma --accept-data-loss --skip-generate
 
 # Check if database has any users (to determine if we need to seed)
 echo "🔍 Checking if database needs seeding..."
-USER_COUNT=$(npx prisma db execute --stdin <<< 'SELECT COUNT(*) as count FROM "User";' | grep -oP '\d+' | head -1 || echo "0")
+USER_COUNT=$(node --input-type=module <<'NODE'
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
+const count = await prisma.user.count();
+await prisma.$disconnect();
+console.log(count);
+NODE
+)
+USER_COUNT=${USER_COUNT:-0}
 
 if [ "$USER_COUNT" -gt "0" ]; then
   echo "ℹ️  Database already has $USER_COUNT users. Skipping seed."
 else
   echo "🌱 Database is empty. Running seed script..."
-  npm run db:seed
+  node prisma/seed.js
   echo "✅ Database seeded successfully"
 fi
 
