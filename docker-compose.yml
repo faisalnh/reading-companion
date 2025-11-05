@@ -38,12 +38,17 @@ services:
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       NODE_ENV: production
-    ports:
-      - "3000:3000"
     volumes:
       - ./public/books:/app/public/books
       - ./public/covers:/app/public/covers
       - ./public/badges:/app/public/badges
 
+    networks:
+      - coolify
+
 volumes:
   postgres_data:
+
+networks:
+  coolify:
+    external: true
