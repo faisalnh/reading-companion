@@ -48,11 +48,9 @@ COPY --from=builder /app/scripts ./scripts
 
 # Copy entrypoint script
 COPY docker-entrypoint.sh /app/
-RUN chmod +x /app/docker-entrypoint.sh
-
-# Create directories for uploads
-RUN mkdir -p public/books public/covers public/badges
-RUN chown -R nextjs:nodejs public
+RUN chmod +x /app/docker-entrypoint.sh \
+  && mkdir -p public/books public/covers public/badges \
+  && chown -R nextjs:nodejs /app
 
 USER nextjs
 
