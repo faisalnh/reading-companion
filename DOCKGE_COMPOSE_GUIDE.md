@@ -19,7 +19,7 @@ This guide walks you through creating and deploying the Reading Buddy stack usin
 
 ### Step 3: Add Docker Compose Configuration
 
-You'll see an editor. **Copy and paste this entire docker-compose.yml**:
+You'll see an editor. **Copy and paste this entire docker-compose.yml** (matches the repository's latest `docker-compose.yml`; Docker might warn that the `version` key is deprecated, which is safe to ignore):
 
 ```yaml
 version: '3.8'
@@ -28,9 +28,9 @@ services:
   # PostgreSQL Database
   # Stores all application data including users, books, and reading progress
   db:
-    image: postgres:16-alpine
-    container_name: reading-buddy-db
-    restart: unless-stopped
+    image: ${POSTGRES_IMAGE:-postgres:16-alpine}
+    container_name: ${DB_CONTAINER_NAME:-reading-buddy-db}
+    restart: ${DB_RESTART_POLICY:-unless-stopped}
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
@@ -38,14 +38,14 @@ services:
     ports:
       - "${DB_PORT:-5432}:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ${POSTGRES_VOLUME:-postgres_data}:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      interval: ${DB_HEALTHCHECK_INTERVAL:-10s}
+      timeout: ${DB_HEALTHCHECK_TIMEOUT:-5s}
+      retries: ${DB_HEALTHCHECK_RETRIES:-5}
     networks:
-      - reading-buddy-network
+      - app-network
     labels:
       - "com.dockge.description=PostgreSQL database for Reading Buddy"
       - "com.dockge.icon=database"
@@ -54,10 +54,10 @@ services:
   # Main web application server with SSR and API routes
   app:
     build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: reading-buddy-app
-    restart: unless-stopped
+      context: ${APP_BUILD_CONTEXT:-.}
+      dockerfile: ${APP_DOCKERFILE:-Dockerfile}
+    container_name: ${APP_CONTAINER_NAME:-reading-buddy-app}
+    restart: ${APP_RESTART_POLICY:-unless-stopped}
     depends_on:
       db:
         condition: service_healthy
@@ -82,18 +82,19 @@ services:
     ports:
       - "${APP_PORT:-3000}:3000"
     networks:
-      - reading-buddy-network
+      - app-network
     volumes:
       # Persist uploaded files
-      - app_uploads:/app/public/books
-      - app_covers:/app/public/covers
-      - app_badges:/app/public/badges
+      - ${APP_UPLOADS_VOLUME:-app_uploads}:/app/public/books
+      - ${APP_COVERS_VOLUME:-app_covers}:/app/public/covers
+      - ${APP_BADGES_VOLUME:-app_badges}:/app/public/badges
     labels:
       - "com.dockge.description=Reading Buddy Next.js Application"
       - "com.dockge.icon=book"
 
 networks:
-  reading-buddy-network:
+  app-network:
+    name: ${APP_NETWORK_NAME:-reading-buddy-network}
     driver: bridge
 
 volumes:
@@ -107,7 +108,7 @@ volumes:
     driver: local
 ```
 
-Click **"Save"** (Ctrl+S or the save icon)
+Click **"Save"** (Ctrl+S or the save icon). Compose may emit a warning that the `version` attribute is deprecated; this is expected and harmless.
 
 ### Step 4: Upload Application Files
 
@@ -118,8 +119,8 @@ You need to upload your application source code to the stack directory:
 # On your server, navigate to the stack directory
 cd /opt/stacks/reading-buddy
 
-# Clone or copy your repository
-git clone https://github.com/yourusername/reading-buddy.git .
+# Clone or copy your repository (replace with your fork if needed)
+git clone https://github.com/faisalnh/reading-companion.git .
 
 # Or if you have files locally, use SCP:
 # scp -r /path/to/reading-buddy/* user@server:/opt/stacks/reading-buddy/
@@ -130,7 +131,7 @@ git clone https://github.com/yourusername/reading-buddy.git .
 2. Click the **"Terminal"** button
 3. Run:
 ```bash
-git clone https://github.com/yourusername/reading-buddy.git /tmp/app
+git clone https://github.com/faisalnh/reading-companion.git /tmp/app
 mv /tmp/app/* .
 mv /tmp/app/.* . 2>/dev/null
 rm -rf /tmp/app
@@ -147,7 +148,7 @@ rm -rf /tmp/app
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=CHANGE_THIS_SECURE_PASSWORD
 POSTGRES_DB=reading_buddy
-DATABASE_URL=postgresql://postgres:CHANGE_THIS_SECURE_PASSWORD@db:5432/reading_buddy
+DATABASE_URL=postgresql://postgres:CHANGE_THIS_SECURE_PASSWORD@db:5432/reading_buddy?schema=public
 
 # Port Configuration (optional, defaults shown)
 APP_PORT=3000
@@ -167,6 +168,23 @@ GEMINI_API_KEY=your-gemini-api-key-here
 # Application Settings
 NODE_ENV=production
 PORT=3000
+
+# Optional overrides (only change if you need custom names/paths)
+POSTGRES_IMAGE=postgres:16-alpine
+DB_CONTAINER_NAME=reading-buddy-db
+DB_RESTART_POLICY=unless-stopped
+POSTGRES_VOLUME=postgres_data
+DB_HEALTHCHECK_INTERVAL=10s
+DB_HEALTHCHECK_TIMEOUT=5s
+DB_HEALTHCHECK_RETRIES=5
+APP_BUILD_CONTEXT=.
+APP_DOCKERFILE=Dockerfile
+APP_CONTAINER_NAME=reading-buddy-app
+APP_RESTART_POLICY=unless-stopped
+APP_UPLOADS_VOLUME=app_uploads
+APP_COVERS_VOLUME=app_covers
+APP_BADGES_VOLUME=app_badges
+APP_NETWORK_NAME=reading-buddy-network
 ```
 
 **IMPORTANT: Replace these values:**
@@ -186,6 +204,7 @@ PORT=3000
    - Production: `https://your-domain.com`
 
 5. **Add GEMINI_API_KEY** (get from https://makersuite.google.com/app/apikey)
+All optional overrides can be removed if you prefer the defaults; Compose falls back to the values shown after each `:-`.
 
 Click **"Save"**
 
@@ -210,12 +229,13 @@ If files are missing, repeat Step 4.
 
 ### Step 7: Build and Start the Stack
 
-1. Click the **"Start"** button (▶ play icon)
-2. Dockge will:
+1. Click **"Rebuild"** (hammer icon) to make sure the new Dockerfile is used
+2. After the build completes, click the **"Start"** button (▶ play icon)
+3. Dockge will:
    - Pull the PostgreSQL image
-   - Build your Next.js application (this takes 5-10 minutes)
+   - Build your Next.js application (expect 3–7 minutes on first run)
    - Start both containers
-3. Watch the logs for any errors
+4. Watch the logs for any errors
 
 ### Step 8: Monitor Deployment
 

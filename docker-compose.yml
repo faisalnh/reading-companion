@@ -4,9 +4,9 @@ services:
   # PostgreSQL Database
   # Stores all application data including users, books, and reading progress
   db:
-    image: postgres:16-alpine
-    container_name: reading-buddy-db
-    restart: unless-stopped
+    image: ${POSTGRES_IMAGE:-postgres:16-alpine}
+    container_name: ${DB_CONTAINER_NAME:-reading-buddy-db}
+    restart: ${DB_RESTART_POLICY:-unless-stopped}
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
@@ -14,14 +14,14 @@ services:
     ports:
       - "${DB_PORT:-5432}:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ${POSTGRES_VOLUME:-postgres_data}:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      interval: ${DB_HEALTHCHECK_INTERVAL:-10s}
+      timeout: ${DB_HEALTHCHECK_TIMEOUT:-5s}
+      retries: ${DB_HEALTHCHECK_RETRIES:-5}
     networks:
-      - reading-buddy-network
+      - app-network
     labels:
       - "com.dockge.description=PostgreSQL database for Reading Buddy"
       - "com.dockge.icon=database"
@@ -30,10 +30,10 @@ services:
   # Main web application server with SSR and API routes
   app:
     build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: reading-buddy-app
-    restart: unless-stopped
+      context: ${APP_BUILD_CONTEXT:-.}
+      dockerfile: ${APP_DOCKERFILE:-Dockerfile}
+    container_name: ${APP_CONTAINER_NAME:-reading-buddy-app}
+    restart: ${APP_RESTART_POLICY:-unless-stopped}
     depends_on:
       db:
         condition: service_healthy
@@ -58,18 +58,19 @@ services:
     ports:
       - "${APP_PORT:-3000}:3000"
     networks:
-      - reading-buddy-network
+      - app-network
     volumes:
       # Persist uploaded files
-      - app_uploads:/app/public/books
-      - app_covers:/app/public/covers
-      - app_badges:/app/public/badges
+      - ${APP_UPLOADS_VOLUME:-app_uploads}:/app/public/books
+      - ${APP_COVERS_VOLUME:-app_covers}:/app/public/covers
+      - ${APP_BADGES_VOLUME:-app_badges}:/app/public/badges
     labels:
       - "com.dockge.description=Reading Buddy Next.js Application"
       - "com.dockge.icon=book"
 
 networks:
-  reading-buddy-network:
+  app-network:
+    name: ${APP_NETWORK_NAME:-reading-buddy-network}
     driver: bridge
 
 volumes:
