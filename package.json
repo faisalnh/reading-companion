@@ -13,7 +13,6 @@
     "db:push": "prisma db push",
     "db:seed": "node prisma/seed.js",
     "db:studio": "prisma studio",
-    "db:init": "bash scripts/init-db.sh"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
