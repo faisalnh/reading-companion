@@ -1,17 +1,30 @@
 "use client";
 
-import { signIn } from "next-auth/react";
-import { useState } from "react";
+import { signIn, useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function SignInPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams?.get("callbackUrl") ?? "/dashboard";
+  const { status } = useSession();
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.replace(callbackUrl);
+    }
+  }, [status, router, callbackUrl]);
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
-      await signIn("google", { callbackUrl: "/dashboard" });
+      await signIn("google", { callbackUrl });
     } catch (error) {
       console.error("Sign in error:", error);
+    } finally {
+      // If NextAuth does not redirect (e.g. popup blockers), re-enable button
       setIsLoading(false);
     }
   };
@@ -37,7 +50,15 @@ export default function SignInPage() {
             <div className="w-6 h-6 border-3 border-primary-500 border-t-transparent rounded-full animate-spin" />
           ) : (
             <>
-              <svg className="w-6 h-6 flex-shrink-0" viewBox="0 0 24 24">
+              <svg
+                className="w-6 h-6 flex-none"
+                viewBox="0 0 24 24"
+                width="24"
+                height="24"
+                aria-hidden="true"
+                focusable="false"
+                preserveAspectRatio="xMidYMid meet"
+              >
                 <path
                   fill="#4285F4"
                   d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
