@@ -5,8 +5,8 @@ echo "🗄️  Starting database initialization..."
 
 # Check if DATABASE_URL is set
 if [ -z "$DATABASE_URL" ]; then
-  echo "❌ ERROR: DATABASE_URL environment variable is not set"
-  exit 1
+  echo "⚠️  DATABASE_URL environment variable is not set. Skipping database initialization."
+  exit 0
 fi
 
 echo "✅ Database URL is configured"

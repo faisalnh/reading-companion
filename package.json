@@ -15,9 +15,6 @@
     "db:studio": "prisma studio",
     "db:init": "bash scripts/init-db.sh"
   },
-  "prisma": {
-    "seed": "node prisma/seed.js"
-  },
   "keywords": [],
   "author": "",
   "license": "ISC",
