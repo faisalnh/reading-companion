@@ -1,0 +1,58 @@
+import { notFound, redirect } from 'next/navigation';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { QuizPlayer } from '@/components/dashboard/QuizPlayer';
+
+type PageProps = {
+  params: { quizId: string };
+};
+
+type QuizPayload = {
+  title?: string;
+  questions: {
+    question: string;
+    options: string[];
+    answerIndex: number;
+    explanation?: string;
+  }[];
+};
+
+export default async function StudentQuizPage({ params }: PageProps) {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect('/login');
+  }
+
+  const quizId = Number(params.quizId);
+  if (Number.isNaN(quizId)) {
+    notFound();
+  }
+
+  const { data: quiz } = await supabase
+    .from('quizzes')
+    .select('id, questions, books(title)')
+    .eq('id', quizId)
+    .single();
+
+  if (!quiz) {
+    notFound();
+  }
+
+  const quizData = quiz.questions as QuizPayload;
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <p className="text-sm uppercase tracking-wide text-white/60">Quiz</p>
+        <h1 className="text-3xl font-semibold text-white">
+          {quizData?.title ?? quiz.books?.title ?? 'AI Quiz'}
+        </h1>
+        <p className="text-white/70">Answer every question to submit your score.</p>
+      </div>
+      <QuizPlayer quizId={quiz.id} quizData={quizData} />
+    </div>
+  );
+}
