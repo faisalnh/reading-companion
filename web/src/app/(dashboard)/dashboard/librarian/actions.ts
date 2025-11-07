@@ -6,6 +6,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getMinioBucketName, getMinioClient } from '@/lib/minio';
 import { getSupabaseAdminClient } from '@/lib/supabase/admin';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import type { AccessLevelValue } from '@/constants/accessLevels';
 
 export const checkCurrentUserRole = async () => {
   const supabase = await createSupabaseServerClient();
@@ -37,6 +38,39 @@ export const checkCurrentUserRole = async () => {
   };
 };
 
+const ensureLibrarianOrAdmin = async () => {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error('You must be signed in to manage books.');
+  }
+
+  const { data: profiles, error: profileError } = await supabase.from('profiles').select('role').eq('id', user.id);
+
+  if (profileError) {
+    throw new Error(`Profile query failed: ${profileError.message}. Please contact admin.`);
+  }
+
+  if (!profiles || profiles.length === 0) {
+    throw new Error('No profile found for your account. Please contact admin to set up your profile.');
+  }
+
+  if (profiles.length > 1) {
+    console.warn(`Warning: User ${user.id} has ${profiles.length} duplicate profiles. Using the first one.`);
+  }
+
+  const profile = profiles[0];
+
+  if (!profile || !['LIBRARIAN', 'ADMIN'].includes(profile.role)) {
+    throw new Error(
+      `Insufficient permissions. Your current role is: ${profile?.role || 'unknown'}. Only LIBRARIAN or ADMIN users can manage books.`,
+    );
+  }
+};
+
 const getPublicBaseUrl = () => {
   const endpoint = process.env.MINIO_ENDPOINT;
   const port = process.env.MINIO_PORT;
@@ -55,6 +89,53 @@ const getPublicBaseUrl = () => {
 
 const sanitizeFilename = (filename: string) => {
   return filename.replace(/[^a-zA-Z0-9_.-]/g, '_');
+};
+
+const decodeSegment = (segment: string) => {
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    return segment;
+  }
+};
+
+const getObjectKeyFromPublicUrl = (publicUrl: string | null | undefined) => {
+  if (!publicUrl) {
+    return null;
+  }
+
+  const bucketName = getMinioBucketName();
+  const publicBaseUrl = getPublicBaseUrl();
+  const normalizedUrl = publicUrl.trim();
+
+  if (!normalizedUrl) {
+    return null;
+  }
+
+  const prefix = `${publicBaseUrl.replace(/\/$/, '')}/${bucketName}/`;
+  if (normalizedUrl.startsWith(prefix)) {
+    return normalizedUrl.slice(prefix.length);
+  }
+
+  try {
+    const parsed = new URL(normalizedUrl);
+    const pathParts = parsed.pathname
+      .split('/')
+      .filter(Boolean)
+      .map((segment) => decodeSegment(segment));
+
+    if (!pathParts.length) {
+      return null;
+    }
+
+    if (pathParts[0] === bucketName) {
+      return pathParts.slice(1).join('/');
+    }
+
+    return pathParts.join('/');
+  } catch {
+    return null;
+  }
 };
 
 export const generatePresignedUploadUrls = async (input: {
@@ -87,76 +168,158 @@ export const generatePresignedUploadUrls = async (input: {
 };
 
 export const saveBookMetadata = async (input: {
+  isbn: string;
   title: string;
   author: string;
+  publisher: string;
+  publicationYear?: number;
+  genre: string;
+  language: string;
   description?: string;
-  category?: string;
-  gradeLevel?: number;
-  pageCount?: number;
+  pageCount: number;
+  accessLevels: AccessLevelValue[];
   pdfUrl: string;
   coverUrl: string;
 }) => {
-  const supabase = await createSupabaseServerClient();
+  await ensureLibrarianOrAdmin();
 
-  // Debug: Check current user and their role
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    throw new Error('You must be signed in to upload books.');
-  }
-
-  // Check user's profile and role (handle duplicates by taking first result)
-  const { data: profiles, error: profileError } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id);
-
-  console.log('Current user:', user.email);
-  console.log('Profiles found:', profiles?.length);
-  console.log('Profile data:', profiles);
-  console.log('Profile error:', profileError);
-
-  if (profileError) {
-    throw new Error(`Profile query failed: ${profileError.message}. Please contact admin.`);
-  }
-
-  if (!profiles || profiles.length === 0) {
-    throw new Error('No profile found for your account. Please contact admin to set up your profile.');
-  }
-
-  if (profiles.length > 1) {
-    console.warn(`Warning: User ${user.id} has ${profiles.length} duplicate profiles. Using the first one.`);
-  }
-
-  const profile = profiles[0];
-
-  if (!profile || !['LIBRARIAN', 'ADMIN'].includes(profile.role)) {
-    throw new Error(
-      `Insufficient permissions. Your current role is: ${profile?.role || 'unknown'}. Only LIBRARIAN or ADMIN users can upload books.`
-    );
+  if (!input.accessLevels?.length) {
+    throw new Error('At least one access level is required.');
   }
 
   const supabaseAdmin = getSupabaseAdminClient();
 
-  const { error } = await supabaseAdmin.from('books').insert({
-    title: input.title,
-    author: input.author,
-    description: input.description,
-    category: input.category,
-    grade_level: input.gradeLevel,
-    page_count: input.pageCount,
-    pdf_url: input.pdfUrl,
-    cover_url: input.coverUrl,
-  });
+  const { data: insertedBook, error } = await supabaseAdmin
+    .from('books')
+    .insert({
+      isbn: input.isbn,
+      title: input.title,
+      author: input.author,
+      publisher: input.publisher,
+      publication_year: input.publicationYear,
+      genre: input.genre,
+      language: input.language,
+      description: input.description,
+      page_count: input.pageCount,
+      pdf_url: input.pdfUrl,
+      cover_url: input.coverUrl,
+    })
+    .select('id')
+    .single();
+
+  if (error || !insertedBook) {
+    console.error('Book insert error:', error);
+    throw error ?? new Error('Unable to insert book.');
+  }
+
+  const { error: accessInsertError } = await supabaseAdmin
+    .from('book_access')
+    .insert(input.accessLevels.map((level) => ({ book_id: insertedBook.id, access_level: level })));
+
+  if (accessInsertError) {
+    console.error('Book access insert error:', accessInsertError);
+    throw accessInsertError;
+  }
+
+  revalidatePath('/dashboard/library');
+  revalidatePath('/dashboard/librarian');
+};
+
+export const updateBookMetadata = async (input: {
+  id: number;
+  isbn: string;
+  title: string;
+  author: string;
+  publisher: string;
+  publicationYear: number;
+  genre: string;
+  language: string;
+  description?: string | null;
+  accessLevels: AccessLevelValue[];
+}) => {
+  await ensureLibrarianOrAdmin();
+
+  const supabaseAdmin = getSupabaseAdminClient();
+  const { error } = await supabaseAdmin
+    .from('books')
+    .update({
+      isbn: input.isbn,
+      title: input.title,
+      author: input.author,
+      publisher: input.publisher,
+      publication_year: input.publicationYear,
+      genre: input.genre,
+      language: input.language,
+      description: input.description ?? null,
+    })
+    .eq('id', input.id);
 
   if (error) {
-    console.error('Book insert error:', error);
+    console.error('Book update error:', error);
+    throw error;
+  }
+
+  if (!input.accessLevels?.length) {
+    throw new Error('At least one access level is required.');
+  }
+
+  const { error: deleteAccessError } = await supabaseAdmin.from('book_access').delete().eq('book_id', input.id);
+  if (deleteAccessError) {
+    console.error('Book access delete error:', deleteAccessError);
+    throw deleteAccessError;
+  }
+
+  const { error: insertAccessError } = await supabaseAdmin
+    .from('book_access')
+    .insert(input.accessLevels.map((level) => ({ book_id: input.id, access_level: level })));
+
+  if (insertAccessError) {
+    console.error('Book access insert error:', insertAccessError);
+    throw insertAccessError;
+  }
+
+  revalidatePath('/dashboard/library');
+  revalidatePath('/dashboard/librarian');
+
+  return { success: true };
+};
+
+export const deleteBook = async (input: { id: number }) => {
+  await ensureLibrarianOrAdmin();
+
+  const supabaseAdmin = getSupabaseAdminClient();
+  const minioClient = getMinioClient();
+  const bucketName = getMinioBucketName();
+
+  const { data: book, error: bookError } = await supabaseAdmin
+    .from('books')
+    .select('pdf_url, cover_url')
+    .eq('id', input.id)
+    .single();
+
+  if (bookError) {
+    throw new Error('Unable to locate book for deletion.');
+  }
+
+  const pdfObjectKey = getObjectKeyFromPublicUrl(book?.pdf_url);
+  const coverObjectKey = getObjectKeyFromPublicUrl(book?.cover_url);
+
+  for (const objectKey of [pdfObjectKey, coverObjectKey]) {
+    if (!objectKey) continue;
+    await minioClient.removeObject(bucketName, objectKey);
+  }
+
+  const { error } = await supabaseAdmin.from('books').delete().eq('id', input.id);
+
+  if (error) {
+    console.error('Book delete error:', error);
     throw error;
   }
 
   revalidatePath('/dashboard/library');
+  revalidatePath('/dashboard/librarian');
+
+  return { success: true };
 };
 
 export const generateQuizForBook = async (input: { bookId: number }) => {
