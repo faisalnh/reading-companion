@@ -63,7 +63,7 @@ export const LoginForm = () => {
       <div className="mb-8 space-y-3 text-center">
         <div className="text-6xl">📚✨</div>
         <h1 className="text-4xl font-black text-purple-600">Welcome Back!</h1>
-        <p className="text-lg font-semibold text-purple-500">Let's continue your reading adventure!</p>
+        <p className="text-lg font-semibold text-purple-500">Let&rsquo;s continue your reading adventure!</p>
       </div>
 
       <form className="space-y-5" onSubmit={handleSubmit}>
@@ -106,7 +106,7 @@ export const LoginForm = () => {
           disabled={isLoading}
           className="btn-3d btn-squish w-full rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 px-6 py-4 text-xl font-black text-white transition hover:from-purple-600 hover:to-pink-600 disabled:pointer-events-none disabled:opacity-50"
         >
-          {isLoading ? '🎈 Signing in…' : '🚀 Let\'s Go!'}
+          {isLoading ? '🎈 Signing in…' : '🚀 Let&rsquo;s Go!'}
         </button>
       </form>
 

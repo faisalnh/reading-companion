@@ -3,8 +3,23 @@
 import { useEffect, useState } from 'react';
 import { checkCurrentUserRole } from '@/app/(dashboard)/dashboard/librarian/actions';
 
+type RoleProfile = {
+  role?: string | null;
+  full_name?: string | null;
+};
+
+type RoleInfo = {
+  userId?: string;
+  email?: string | null;
+  profile?: RoleProfile | null;
+  profileError?: string | null;
+  hasDuplicates?: boolean;
+  profileCount?: number;
+  error?: string;
+};
+
 export const RoleChecker = () => {
-  const [roleInfo, setRoleInfo] = useState<any>(null);
+  const [roleInfo, setRoleInfo] = useState<RoleInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -87,7 +102,7 @@ export const RoleChecker = () => {
         <div className="mt-3 rounded border border-red-600 bg-red-900/30 p-3">
           <p className="text-xs font-semibold text-red-300">🚨 Critical: No Profile Found</p>
           <p className="mt-1 text-xs text-red-200">
-            Your account doesn't have a profile record. This is required for the app to work.
+            Your account doesn&rsquo;t have a profile record. This is required for the app to work.
           </p>
           <p className="mt-2 text-xs text-red-200">
             Run this SQL in your Supabase SQL Editor to create your profile:

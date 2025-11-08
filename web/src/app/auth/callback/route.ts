@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
   const targetPath = type === 'recovery' ? '/reset-password' : nextPath;
 
   // Create a temporary response to collect cookies
-  let response = NextResponse.next();
+  const response = NextResponse.next();
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
