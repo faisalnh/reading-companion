@@ -269,56 +269,59 @@ export const BookUploadForm = ({
     <form
       ref={formRef}
       onSubmit={handleSubmit}
-      className="space-y-6 rounded-2xl border border-slate-800 bg-slate-950/80 p-6 shadow-xl"
+      className="space-y-6 rounded-[32px] border border-white/70 bg-white/90 p-6 text-indigo-950 shadow-[0_25px_70px_rgba(255,145,201,0.35)] md:p-8"
     >
       <div>
-        <h2 className="text-lg font-semibold text-white">Add New Book</h2>
-        <p className="text-sm text-slate-400">Upload the PDF, cover image, and metadata.</p>
+        <div className="mb-2 inline-block rounded-2xl border-4 border-pink-300 bg-pink-400 px-4 py-1">
+          <p className="text-sm font-black uppercase tracking-wide text-pink-900">📚 New Adventure</p>
+        </div>
+        <h2 className="text-3xl font-black text-purple-900">Add New Book</h2>
+        <p className="text-base font-semibold text-purple-600">Upload the PDF, cover image, and metadata.</p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <label className="space-y-2 text-sm font-medium text-white">
+        <label className="space-y-2 text-base font-bold text-purple-700">
           ISBN
           <input
             name="isbn"
             required
             maxLength={32}
-            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white outline-none focus:border-white/30"
+            className="w-full rounded-2xl border-4 border-purple-300 bg-white px-4 py-3 font-semibold text-purple-900 outline-none transition-all"
             placeholder="9780743273565"
           />
         </label>
 
-        <label className="space-y-2 text-sm font-medium text-white">
+        <label className="space-y-2 text-base font-bold text-purple-700">
           Title
           <input
             name="title"
             required
-            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white outline-none focus:border-white/30"
+            className="w-full rounded-2xl border-4 border-purple-300 bg-white px-4 py-3 font-semibold text-purple-900 outline-none transition-all"
             placeholder="The Great Gatsby"
           />
         </label>
 
-        <label className="space-y-2 text-sm font-medium text-white">
+        <label className="space-y-2 text-base font-bold text-purple-700">
           Author
           <input
             name="author"
             required
-            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white outline-none focus:border-white/30"
+            className="w-full rounded-2xl border-4 border-purple-300 bg-white px-4 py-3 font-semibold text-purple-900 outline-none transition-all"
             placeholder="F. Scott Fitzgerald"
           />
         </label>
 
-        <label className="space-y-2 text-sm font-medium text-white">
+        <label className="space-y-2 text-base font-bold text-purple-700">
           Publisher
           <input
             name="publisher"
             required
-            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white outline-none focus:border-white/30"
+            className="w-full rounded-2xl border-4 border-purple-300 bg-white px-4 py-3 font-semibold text-purple-900 outline-none transition-all"
             placeholder="Charles Scribner's Sons"
           />
         </label>
 
-        <label className="space-y-2 text-sm font-medium text-white">
+        <label className="space-y-2 text-base font-bold text-purple-700">
           Year
           <input
             name="publicationYear"
@@ -326,18 +329,18 @@ export const BookUploadForm = ({
             min={1800}
             max={3000}
             required
-            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white outline-none focus:border-white/30"
+            className="w-full rounded-2xl border-4 border-purple-300 bg-white px-4 py-3 font-semibold text-purple-900 outline-none transition-all"
             placeholder="1925"
           />
         </label>
 
-        <label className="space-y-2 text-sm font-medium text-white">
+        <label className="space-y-2 text-base font-bold text-purple-700">
           Genre
           <input
             name="genre"
             list={genreListId}
             required
-            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white outline-none focus:border-white/30"
+            className="w-full rounded-2xl border-4 border-purple-300 bg-white px-4 py-3 font-semibold text-purple-900 outline-none transition-all"
             placeholder="Classics"
           />
           {normalizedGenreOptions.length ? (
@@ -347,16 +350,16 @@ export const BookUploadForm = ({
               ))}
             </datalist>
           ) : null}
-          <p className="text-xs text-white/60">Choose an existing genre or type a new one.</p>
+          <p className="text-xs text-indigo-500">Choose an existing genre or type a new one.</p>
         </label>
 
-        <label className="space-y-2 text-sm font-medium text-white">
+        <label className="space-y-2 text-base font-bold text-purple-700">
           Language
           <input
             name="language"
             list={languageListId}
             required
-            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white outline-none focus:border-white/30"
+            className="w-full rounded-2xl border-4 border-purple-300 bg-white px-4 py-3 font-semibold text-purple-900 outline-none transition-all"
             placeholder="English"
           />
           {normalizedLanguageOptions.length ? (
@@ -366,27 +369,30 @@ export const BookUploadForm = ({
               ))}
             </datalist>
           ) : null}
-          <p className="text-xs text-white/60">Pick from the list or enter a new language.</p>
+          <p className="text-xs text-indigo-500">Pick from the list or enter a new language.</p>
         </label>
 
-        <label className="space-y-2 text-sm font-medium text-white md:col-span-2">
+        <label className="space-y-2 text-base font-bold text-purple-700 md:col-span-2">
           Description
           <textarea
             name="description"
             rows={3}
-            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white outline-none focus:border-white/30"
+            className="w-full rounded-2xl border-4 border-purple-300 bg-white px-4 py-3 font-semibold text-purple-900 outline-none transition-all"
             placeholder="Quick summary for librarians and AI quiz prompts."
           />
         </label>
 
-        <fieldset className="space-y-2 text-sm font-medium text-white md:col-span-2">
+        <fieldset className="space-y-2 text-base font-bold text-purple-700 md:col-span-2">
           <legend>Access</legend>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {ACCESS_LEVEL_OPTIONS.map((option) => (
-              <label key={option.value} className="flex items-center gap-2 rounded-lg border border-white/15 px-3 py-2 text-sm">
+              <label
+                key={option.value}
+                className="flex items-center gap-2 rounded-xl border border-indigo-100 bg-white/70 px-3 py-2 text-sm text-indigo-900"
+              >
                 <input
                   type="checkbox"
-                  className="h-4 w-4 rounded border-white/50 bg-transparent text-slate-900 focus:ring-white/60"
+                  className="h-4 w-4 rounded border-indigo-300 text-fuchsia-500 focus:ring-2 focus:ring-rose-200"
                   checked={selectedAccessLevels.has(option.value)}
                   onChange={() => toggleAccessLevel(option.value)}
                 />
@@ -394,25 +400,25 @@ export const BookUploadForm = ({
               </label>
             ))}
           </div>
-          <p className="text-xs text-white/60">Choose who can access this title. Select at least one group.</p>
+          <p className="text-xs text-indigo-500">Choose who can access this title. Select at least one group.</p>
         </fieldset>
 
-        <div className="space-y-2 text-sm font-medium text-white">
+        <div className="space-y-2 text-base font-bold text-purple-700">
           Detected page count
-          <div className="rounded-lg border border-dashed border-white/15 bg-white/5 px-3 py-2 text-sm text-white">
+          <div className="rounded-2xl border border-dashed border-indigo-200 bg-white/80 px-3 py-2 text-sm text-indigo-900">
             {pageCount ? `${pageCount} pages` : 'Select a PDF to detect page count'}
           </div>
           {pdfDetectionState === 'working' ? (
-            <p className="text-xs text-white/60">Analyzing PDF…</p>
+            <p className="text-xs text-indigo-500">Analyzing PDF…</p>
           ) : null}
           {pdfDetectionState === 'error' && pdfDetectionMessage ? (
-            <p className="text-xs text-red-300">{pdfDetectionMessage}</p>
+            <p className="text-xs text-rose-500">{pdfDetectionMessage}</p>
           ) : null}
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <label className="space-y-2 text-sm font-medium text-white">
+        <label className="space-y-2 text-base font-bold text-purple-700">
           Book PDF
           <input
             name="pdfFile"
@@ -420,18 +426,18 @@ export const BookUploadForm = ({
             accept="application/pdf"
             required
             onChange={handlePdfFileChange}
-            className="w-full rounded-lg border border-dashed border-white/20 bg-transparent px-3 py-2 text-white file:mr-4 file:rounded-md file:border-0 file:bg-white/90 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-black"
+            className="w-full rounded-2xl border border-dashed border-indigo-200 bg-white/50 px-3 py-2 text-indigo-900 file:mr-4 file:rounded-full file:border-0 file:bg-gradient-to-r file:from-rose-400 file:to-fuchsia-500 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white"
           />
         </label>
 
-        <label className="space-y-2 text-sm font-medium text-white">
+        <label className="space-y-2 text-base font-bold text-purple-700">
           Cover image
           <input
             name="coverFile"
             type="file"
             accept="image/*"
             required
-            className="w-full rounded-lg border border-dashed border-white/20 bg-transparent px-3 py-2 text-white file:mr-4 file:rounded-md file:border-0 file:bg-white/90 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-black"
+            className="w-full rounded-2xl border border-dashed border-indigo-200 bg-white/50 px-3 py-2 text-indigo-900 file:mr-4 file:rounded-full file:border-0 file:bg-gradient-to-r file:from-sky-400 file:to-emerald-400 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white"
           />
         </label>
       </div>
@@ -456,7 +462,7 @@ export const BookUploadForm = ({
         <button
           type="button"
           onClick={handleCancel}
-          className="rounded-lg border border-white/30 px-4 py-3 font-semibold text-white transition hover:bg-white/10"
+          className="rounded-full border border-indigo-200 px-6 py-3 font-semibold text-indigo-700 transition hover:bg-indigo-50"
         >
           Cancel
         </button>

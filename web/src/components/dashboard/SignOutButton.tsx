@@ -21,9 +21,9 @@ export const SignOutButton = () => {
       type="button"
       onClick={handleSignOut}
       disabled={isLoading}
-      className="rounded-lg border border-white/30 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 disabled:pointer-events-none disabled:opacity-50"
+      className="btn-3d btn-squish rounded-2xl border-4 border-red-300 bg-gradient-to-r from-red-400 to-pink-400 px-6 py-3 text-base font-black text-white shadow-lg transition hover:from-red-500 hover:to-pink-500 disabled:pointer-events-none disabled:opacity-50"
     >
-      {isLoading ? 'Signing out…' : 'Sign out'}
+      {isLoading ? '👋 Signing out…' : '🚪 Sign Out'}
     </button>
   );
 };

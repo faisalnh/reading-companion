@@ -36,10 +36,12 @@ export default async function StudentReadPage({ params }: PageProps) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <p className="text-sm uppercase tracking-wide text-white/60">Reading</p>
-        <h1 className="text-3xl font-semibold text-white">{book.title}</h1>
-        <p className="text-white/70">{book.author}</p>
+      <div className="rounded-3xl border-4 border-blue-300 bg-gradient-to-br from-blue-50 to-cyan-50 p-6 shadow-lg">
+        <div className="mb-2 inline-block rounded-2xl border-4 border-cyan-300 bg-cyan-400 px-4 py-1">
+          <p className="text-sm font-black uppercase tracking-wide text-cyan-900">📖 Now Reading</p>
+        </div>
+        <h1 className="text-4xl font-black text-blue-900">{book.title}</h1>
+        <p className="mt-2 text-xl font-bold text-blue-700">by {book.author}</p>
       </div>
       <BookReader
         bookId={book.id}

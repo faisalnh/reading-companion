@@ -23,12 +23,12 @@ export type ManagedBookRecord = {
   accessLevels: AccessLevelValue[];
 };
 
-const ACCESS_BADGES: Record<AccessLevelValue, { label: string; color: string }> = {
-  KINDERGARTEN: { label: 'K', color: 'bg-emerald-500/90 text-emerald-950' },
-  LOWER_ELEMENTARY: { label: 'LE', color: 'bg-sky-400/90 text-sky-950' },
-  UPPER_ELEMENTARY: { label: 'UE', color: 'bg-blue-500/90 text-blue-50' },
-  JUNIOR_HIGH: { label: 'JH', color: 'bg-purple-500/90 text-purple-50' },
-  TEACHERS_STAFF: { label: 'TS', color: 'bg-amber-400/90 text-amber-950' },
+const ACCESS_BADGES: Record<AccessLevelValue, { label: string; color: string; emoji: string }> = {
+  KINDERGARTEN: { label: 'K', color: 'bg-gradient-to-r from-emerald-400 to-teal-400 text-white border-emerald-300', emoji: '🎨' },
+  LOWER_ELEMENTARY: { label: 'LE', color: 'bg-gradient-to-r from-sky-400 to-blue-400 text-white border-sky-300', emoji: '📚' },
+  UPPER_ELEMENTARY: { label: 'UE', color: 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white border-blue-300', emoji: '🔬' },
+  JUNIOR_HIGH: { label: 'JH', color: 'bg-gradient-to-r from-purple-500 to-pink-500 text-white border-purple-300', emoji: '🎓' },
+  TEACHERS_STAFF: { label: 'TS', color: 'bg-gradient-to-r from-amber-400 to-orange-400 text-white border-amber-300', emoji: '👨‍🏫' },
 };
 
 type BookManagerProps = {
@@ -250,51 +250,52 @@ export const BookManager = ({
   };
 
   return (
-    <section className="space-y-4 rounded-2xl border border-white/10 bg-slate-950/50 p-6">
+    <section className="space-y-5 rounded-[32px] border border-white/60 bg-white/85 p-6 text-indigo-950 shadow-[0_25px_90px_rgba(119,65,255,0.18)] backdrop-blur-xl md:p-8">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-white">Library Catalog</h2>
-          <p className="text-sm text-white/70">Review, edit, or remove uploaded eBooks.</p>
+          <p className="text-xs uppercase tracking-[0.3em] text-rose-400">Librarian tools</p>
+          <h2 className="text-2xl font-black tracking-tight text-indigo-950">Library Catalog</h2>
+          <p className="text-sm text-indigo-500">Review, edit, or remove uploaded eBooks.</p>
         </div>
         <div className="flex flex-col items-stretch gap-2 text-sm sm:flex-row sm:items-center sm:gap-3">
           <button
             type="button"
             onClick={onAddBookClick}
             disabled={isAddPanelOpen}
-            className="rounded-lg bg-white/90 px-4 py-2 font-semibold text-slate-900 transition hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 disabled:cursor-not-allowed disabled:opacity-60"
+            className="btn-3d btn-squish rounded-2xl border-4 border-pink-300 bg-gradient-to-r from-pink-400 to-fuchsia-500 px-6 py-3 text-lg font-black text-white shadow-lg transition hover:from-pink-500 hover:to-fuchsia-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-400/60 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isAddPanelOpen ? 'Adding eBook…' : 'Add eBook'}
+            {isAddPanelOpen ? '📚 Adding eBook…' : '➕ Add New eBook'}
           </button>
           {feedback ? (
             <span
               className={clsx(
-                'rounded-lg border px-3 py-2 text-xs font-semibold sm:text-sm',
-                feedback.type === 'success' ? 'border-emerald-500/40 text-emerald-300' : 'border-red-500/40 text-red-300',
+                'rounded-2xl border-4 px-5 py-3 text-base font-black',
+                feedback.type === 'success' ? 'border-emerald-300 bg-emerald-100 text-emerald-700' : 'border-rose-300 bg-rose-100 text-rose-700',
               )}
             >
-              {feedback.message}
+              {feedback.type === 'success' ? '✅ ' : '⚠️ '}{feedback.message}
             </span>
           ) : null}
         </div>
       </div>
 
-      <div className="grid gap-3 rounded-2xl border border-white/10 bg-black/15 p-4 text-sm text-white sm:grid-cols-3">
+      <div className="grid gap-4 rounded-2xl border-4 border-purple-300 bg-gradient-to-br from-purple-50 to-pink-50 p-5 shadow-lg sm:grid-cols-3">
         <label className="flex flex-col gap-2">
-          <span className="text-xs uppercase tracking-wide text-white/60">Search</span>
+          <span className="text-sm font-black uppercase tracking-wide text-purple-600">🔍 Search</span>
           <input
             type="search"
             placeholder="Title, author, ISBN..."
             value={searchTerm}
             onChange={(event: ChangeEvent<HTMLInputElement>) => setSearchTerm(event.target.value)}
-            className="rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-white outline-none focus:border-white/40"
+            className="rounded-2xl border-4 border-purple-300 bg-white px-4 py-2 font-semibold text-purple-900 outline-none transition-all"
           />
         </label>
         <label className="flex flex-col gap-2">
-          <span className="text-xs uppercase tracking-wide text-white/60">Author</span>
+          <span className="text-sm font-black uppercase tracking-wide text-purple-600">✍️ Author</span>
           <select
             value={authorFilter}
             onChange={(event) => setAuthorFilter(event.target.value)}
-            className="rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-white outline-none focus:border-white/40"
+            className="rounded-2xl border-4 border-purple-300 bg-white px-4 py-2 font-semibold text-purple-900 outline-none transition-all"
           >
             <option value="ALL">All authors</option>
             {authorOptions.map((option) => (
@@ -305,11 +306,11 @@ export const BookManager = ({
           </select>
         </label>
         <label className="flex flex-col gap-2">
-          <span className="text-xs uppercase tracking-wide text-white/60">Publisher</span>
+          <span className="text-sm font-black uppercase tracking-wide text-purple-600">🏢 Publisher</span>
           <select
             value={publisherFilter}
             onChange={(event) => setPublisherFilter(event.target.value)}
-            className="rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-white outline-none focus:border-white/40"
+            className="rounded-2xl border-4 border-purple-300 bg-white px-4 py-2 font-semibold text-purple-900 outline-none transition-all"
           >
             <option value="ALL">All publishers</option>
             {publisherOptions.map((option) => (
@@ -320,11 +321,11 @@ export const BookManager = ({
           </select>
         </label>
         <label className="flex flex-col gap-2">
-          <span className="text-xs uppercase tracking-wide text-white/60">Year</span>
+          <span className="text-sm font-black uppercase tracking-wide text-purple-600">📅 Year</span>
           <select
             value={yearFilter}
             onChange={(event) => setYearFilter(event.target.value)}
-            className="rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-white outline-none focus:border-white/40"
+            className="rounded-2xl border-4 border-purple-300 bg-white px-4 py-2 font-semibold text-purple-900 outline-none transition-all"
           >
             <option value="ALL">All years</option>
             {yearOptions.map((option) => (
@@ -335,11 +336,11 @@ export const BookManager = ({
           </select>
         </label>
         <label className="flex flex-col gap-2">
-          <span className="text-xs uppercase tracking-wide text-white/60">Genre</span>
+          <span className="text-sm font-black uppercase tracking-wide text-purple-600">🎭 Genre</span>
           <select
             value={genreFilter}
             onChange={(event) => setGenreFilter(event.target.value)}
-            className="rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-white outline-none focus:border-white/40"
+            className="rounded-2xl border-4 border-purple-300 bg-white px-4 py-2 font-semibold text-purple-900 outline-none transition-all"
           >
             <option value="ALL">All genres</option>
             {genreOptions.map((option) => (
@@ -350,11 +351,11 @@ export const BookManager = ({
           </select>
         </label>
         <label className="flex flex-col gap-2">
-          <span className="text-xs uppercase tracking-wide text-white/60">Language</span>
+          <span className="text-sm font-black uppercase tracking-wide text-purple-600">🌍 Language</span>
           <select
             value={languageFilter}
             onChange={(event) => setLanguageFilter(event.target.value)}
-            className="rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-white outline-none focus:border-white/40"
+            className="rounded-2xl border-4 border-purple-300 bg-white px-4 py-2 font-semibold text-purple-900 outline-none transition-all"
           >
             <option value="ALL">All languages</option>
             {languageOptions.map((option) => (
@@ -365,11 +366,11 @@ export const BookManager = ({
           </select>
         </label>
         <label className="flex flex-col gap-2">
-          <span className="text-xs uppercase tracking-wide text-white/60">Access</span>
+          <span className="text-sm font-black uppercase tracking-wide text-purple-600">👥 Access</span>
           <select
             value={accessFilter}
             onChange={(event) => setAccessFilter(event.target.value as AccessLevelValue | 'ALL')}
-            className="rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-white outline-none focus:border-white/40"
+            className="rounded-2xl border-4 border-purple-300 bg-white px-4 py-2 font-semibold text-purple-900 outline-none transition-all"
           >
             <option value="ALL">All access levels</option>
             {ACCESS_LEVEL_OPTIONS.map((option) => (
@@ -382,33 +383,35 @@ export const BookManager = ({
       </div>
 
       {filteredBooks.length === 0 ? (
-        <p className="text-sm text-white/60">
-          {books.length === 0
-            ? 'No books uploaded yet. Use the “Add eBook” button to create your first title.'
-            : 'No books match the current filters.'}
-        </p>
+        <div className="rounded-2xl border-4 border-yellow-300 bg-yellow-50 px-6 py-4 text-center">
+          <p className="text-lg font-bold text-yellow-700">
+            {books.length === 0
+              ? '📚 No books yet! Click "Add New eBook" to get started!'
+              : '🔍 No books match your filters. Try adjusting them!'}
+          </p>
+        </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-white/10">
-          <table className="min-w-full divide-y divide-white/5 text-sm text-white">
-            <thead className="bg-white/5">
+        <div className="overflow-x-auto rounded-3xl border-4 border-blue-300 bg-white shadow-xl">
+          <table className="min-w-full divide-y-4 divide-blue-200 text-sm text-purple-900">
+            <thead className="bg-gradient-to-r from-blue-100 via-purple-100 to-pink-100">
               <tr>
-                <th className="px-4 py-3 text-left font-semibold">Title</th>
-                <th className="px-4 py-3 text-left font-semibold">ISBN</th>
-                <th className="px-4 py-3 text-left font-semibold">Author</th>
-                <th className="px-4 py-3 text-left font-semibold">Publisher</th>
-                <th className="px-4 py-3 text-left font-semibold">Year</th>
-                <th className="px-4 py-3 text-left font-semibold">Genre</th>
-                <th className="px-4 py-3 text-left font-semibold">Language</th>
-                <th className="px-4 py-3 text-left font-semibold">Access</th>
-                <th className="px-4 py-3 text-right font-semibold">Actions</th>
+                <th className="px-4 py-3 text-left text-base font-black text-blue-600">📖 Title</th>
+                <th className="px-4 py-3 text-left text-base font-black text-blue-600">🔢 ISBN</th>
+                <th className="px-4 py-3 text-left text-base font-black text-blue-600">✍️ Author</th>
+                <th className="px-4 py-3 text-left text-base font-black text-blue-600">🏢 Publisher</th>
+                <th className="px-4 py-3 text-left text-base font-black text-blue-600">📅 Year</th>
+                <th className="px-4 py-3 text-left text-base font-black text-blue-600">🎭 Genre</th>
+                <th className="px-4 py-3 text-left text-base font-black text-blue-600">🌍 Language</th>
+                <th className="px-4 py-3 text-left text-base font-black text-blue-600">👥 Access</th>
+                <th className="px-4 py-3 text-right text-base font-black text-blue-600">⚡ Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredBooks.map((book) => (
-                <tr key={book.id} className="border-b border-white/5 bg-white/0 hover:bg-white/5">
+                <tr key={book.id} className="border-b-2 border-blue-100 bg-transparent hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50">
                   <td className="px-4 py-3">
-                    <div className="font-medium">{book.title}</div>
-                    <div className="text-xs text-white/60">{book.author}</div>
+                    <div className="font-bold text-purple-900">{book.title}</div>
+                    <div className="text-xs font-semibold text-purple-600">{book.author}</div>
                   </td>
                   <td className="px-4 py-3">{book.isbn}</td>
                   <td className="px-4 py-3">{book.author}</td>
@@ -425,17 +428,17 @@ export const BookManager = ({
                             <span
                               key={`${book.id}-${level}`}
                               className={clsx(
-                                'rounded-full px-2 py-1 text-xs font-semibold uppercase tracking-wide',
-                                badge?.color ?? 'bg-white/20 text-white',
+                                'rounded-2xl border-2 px-3 py-1 text-xs font-black uppercase tracking-wide shadow-sm',
+                                badge?.color ?? 'bg-indigo-100 text-indigo-600 border-indigo-300',
                               )}
                             >
-                              {badge?.label ?? level.slice(0, 2)}
+                              {badge?.emoji} {badge?.label ?? level.slice(0, 2)}
                             </span>
                           );
                         })}
                       </div>
                     ) : (
-                      <span className="text-white/50">—</span>
+                      <span className="text-purple-300">—</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-right">
@@ -443,17 +446,19 @@ export const BookManager = ({
                       <button
                         type="button"
                         onClick={() => handleEdit(book)}
-                        className="rounded-lg border border-white/20 px-3 py-1 text-xs font-semibold text-white transition hover:bg-white/10"
+                        className="rounded-full border border-indigo-200 bg-white/80 p-2 text-indigo-600 shadow-sm transition hover:bg-indigo-50"
+                        aria-label="Edit book"
                       >
-                        Edit
+                        ✏️
                       </button>
                       <button
                         type="button"
                         onClick={() => handleDelete(book)}
                         disabled={isDeleting && deletePendingId === book.id}
-                        className="rounded-lg border border-red-300/40 px-3 py-1 text-xs font-semibold text-red-200 transition hover:bg-red-500/10 disabled:opacity-40"
+                        className="rounded-full border border-rose-200 bg-white/80 p-2 text-rose-500 shadow-sm transition hover:bg-rose-50 disabled:opacity-40"
+                        aria-label="Delete book"
                       >
-                        {isDeleting && deletePendingId === book.id ? 'Deleting…' : 'Delete'}
+                        🗑️
                       </button>
                     </div>
                   </td>
@@ -465,46 +470,45 @@ export const BookManager = ({
       )}
 
       <div className="rounded-xl border border-white/10 bg-black/20 p-5">
-        <h3 className="text-base font-semibold text-white">Edit Metadata</h3>
         {editingId && editForm ? (
           <form onSubmit={handleUpdateSubmit} className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-            <label className="space-y-1 text-sm font-medium text-white">
+            <label className="space-y-1 text-sm font-semibold text-indigo-800">
               ISBN
               <input
                 value={editForm.isbn}
                 onChange={(event) => handleFieldChange('isbn', event.target.value)}
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white outline-none focus:border-white/30"
+                className="w-full rounded-xl border border-indigo-200 bg-white px-3 py-2 text-indigo-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
                 required
               />
             </label>
-            <label className="space-y-1 text-sm font-medium text-white">
+            <label className="space-y-1 text-sm font-semibold text-indigo-800">
               Title
               <input
                 value={editForm.title}
                 onChange={(event) => handleFieldChange('title', event.target.value)}
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white outline-none focus:border-white/30"
+                className="w-full rounded-xl border border-indigo-200 bg-white px-3 py-2 text-indigo-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
                 required
               />
             </label>
-            <label className="space-y-1 text-sm font-medium text-white">
+            <label className="space-y-1 text-sm font-semibold text-indigo-800">
               Author
               <input
                 value={editForm.author}
                 onChange={(event) => handleFieldChange('author', event.target.value)}
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white outline-none focus:border-white/30"
+                className="w-full rounded-xl border border-indigo-200 bg-white px-3 py-2 text-indigo-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
                 required
               />
             </label>
-            <label className="space-y-1 text-sm font-medium text-white">
+            <label className="space-y-1 text-sm font-semibold text-indigo-800">
               Publisher
               <input
                 value={editForm.publisher}
                 onChange={(event) => handleFieldChange('publisher', event.target.value)}
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white outline-none focus:border-white/30"
+                className="w-full rounded-xl border border-indigo-200 bg-white px-3 py-2 text-indigo-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
                 required
               />
             </label>
-            <label className="space-y-1 text-sm font-medium text-white">
+            <label className="space-y-1 text-sm font-semibold text-indigo-800">
               Year
               <input
                 type="number"
@@ -512,17 +516,17 @@ export const BookManager = ({
                 max={3000}
                 value={editForm.publicationYear}
                 onChange={(event) => handleFieldChange('publicationYear', event.target.value)}
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white outline-none focus:border-white/30"
+                className="w-full rounded-xl border border-indigo-200 bg-white px-3 py-2 text-indigo-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
                 required
               />
             </label>
-            <label className="space-y-1 text-sm font-medium text-white">
+            <label className="space-y-1 text-sm font-semibold text-indigo-800">
               Genre
               <input
                 list={genreListId}
                 value={editForm.genre}
                 onChange={(event) => handleFieldChange('genre', event.target.value)}
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white outline-none focus:border-white/30"
+                className="w-full rounded-xl border border-indigo-200 bg-white px-3 py-2 text-indigo-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
                 required
               />
               {genreOptions.length ? (
@@ -533,13 +537,13 @@ export const BookManager = ({
                 </datalist>
               ) : null}
             </label>
-            <label className="space-y-1 text-sm font-medium text-white">
+            <label className="space-y-1 text-sm font-semibold text-indigo-800">
               Language
               <input
                 list={languageListId}
                 value={editForm.language}
                 onChange={(event) => handleFieldChange('language', event.target.value)}
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white outline-none focus:border-white/30"
+                className="w-full rounded-xl border border-indigo-200 bg-white px-3 py-2 text-indigo-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
                 required
               />
               {languageOptions.length ? (
@@ -550,14 +554,17 @@ export const BookManager = ({
                 </datalist>
               ) : null}
             </label>
-            <fieldset className="md:col-span-2 space-y-1 text-sm font-medium text-white">
+            <fieldset className="md:col-span-2 space-y-1 text-sm font-semibold text-indigo-800">
               <legend>Access</legend>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {ACCESS_LEVEL_OPTIONS.map((option) => (
-                  <label key={option.value} className="flex items-center gap-2 rounded-lg border border-white/15 px-3 py-2 text-sm">
+                  <label
+                    key={option.value}
+                    className="flex items-center gap-2 rounded-xl border border-indigo-100 bg-white/70 px-3 py-2 text-sm text-indigo-900"
+                  >
                     <input
                       type="checkbox"
-                      className="h-4 w-4 rounded border-white/50 bg-transparent text-slate-900 focus:ring-white/60"
+                      className="h-4 w-4 rounded border-indigo-300 text-fuchsia-500 focus:ring-2 focus:ring-rose-200"
                       checked={Boolean(editForm?.accessLevels.includes(option.value))}
                       onChange={() => toggleEditAccessLevel(option.value)}
                     />
@@ -565,28 +572,28 @@ export const BookManager = ({
                   </label>
                 ))}
               </div>
-              <p className="text-xs text-white/60">Select the audiences who can access this book.</p>
+              <p className="text-xs text-indigo-500">Select the audiences who can access this book.</p>
             </fieldset>
-            <label className="md:col-span-2 space-y-1 text-sm font-medium text-white">
+            <label className="md:col-span-2 space-y-1 text-sm font-semibold text-indigo-800">
               Description
               <textarea
                 rows={3}
                 value={editForm.description}
                 onChange={(event) => handleFieldChange('description', event.target.value)}
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white outline-none focus:border-white/30"
+                className="w-full rounded-xl border border-indigo-200 bg-white px-3 py-2 text-indigo-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
                 placeholder="Optional summary for teachers and quiz generation."
               />
             </label>
             {activeBook ? (
-              <div className="md:col-span-2 flex flex-wrap items-center gap-3 text-xs text-white/70">
+              <div className="md:col-span-2 flex flex-wrap items-center gap-3 text-xs text-indigo-500">
                 <span>
-                  Page count: <strong className="text-white">{activeBook.pageCount ?? '—'}</strong>
+                  Page count: <strong className="text-indigo-900">{activeBook.pageCount ?? '—'}</strong>
                 </span>
                 <a
                   href={activeBook.pdfUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="rounded-lg border border-white/20 px-3 py-1 font-semibold text-white transition hover:bg-white/10"
+                  className="rounded-full border border-indigo-200 px-4 py-1 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-50"
                 >
                   View PDF
                 </a>
@@ -594,7 +601,7 @@ export const BookManager = ({
                   href={activeBook.coverUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="rounded-lg border border-white/20 px-3 py-1 font-semibold text-white transition hover:bg-white/10"
+                  className="rounded-full border border-indigo-200 px-4 py-1 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-50"
                 >
                   View Cover
                 </a>
@@ -604,7 +611,7 @@ export const BookManager = ({
               <button
                 type="submit"
                 disabled={isUpdating}
-                className="rounded-lg bg-white/90 px-4 py-2 font-semibold text-slate-900 transition hover:bg-white disabled:opacity-50"
+                className="rounded-full bg-gradient-to-r from-indigo-400 to-sky-400 px-6 py-2 font-semibold text-white shadow-lg transition hover:scale-105 disabled:opacity-50"
               >
                 {isUpdating ? 'Saving…' : 'Save changes'}
               </button>
@@ -615,15 +622,13 @@ export const BookManager = ({
                   setEditForm(null);
                   setFeedback(null);
                 }}
-                className="rounded-lg border border-white/20 px-4 py-2 font-semibold text-white transition hover:bg-white/10"
+                className="rounded-full border border-indigo-200 px-6 py-2 font-semibold text-indigo-700 transition hover:bg-indigo-50"
               >
                 Cancel
               </button>
             </div>
           </form>
-        ) : (
-          <p className="mt-3 text-sm text-white/60">Select a book from the table to edit its metadata.</p>
-        )}
+        ) : null}
       </div>
     </section>
   );

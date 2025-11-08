@@ -62,14 +62,18 @@ export const QuizPlayer = ({ quizId, quizData }: QuizPlayerProps) => {
     }
   };
 
+  const answerLabels = ['A', 'B', 'C', 'D', 'E', 'F'];
+
   return (
     <div className="space-y-6">
       {quizData.questions.map((question, questionIndex) => (
-        <div key={questionIndex} className="rounded-2xl border border-white/10 bg-white/5 p-6">
-          <p className="text-sm uppercase tracking-wider text-white/60">Question {questionIndex + 1}</p>
-          <h2 className="mt-2 text-lg font-semibold text-white">{question.question}</h2>
+        <div key={questionIndex} className="pop-in sticker-card rounded-3xl border-4 border-blue-300 bg-gradient-to-br from-blue-50 to-purple-50 p-6 shadow-lg">
+          <div className="mb-4 inline-block rounded-2xl border-4 border-purple-300 bg-purple-500 px-4 py-2">
+            <p className="text-lg font-black text-white">❓ Question {questionIndex + 1}</p>
+          </div>
+          <h2 className="text-2xl font-black text-purple-900">{question.question}</h2>
 
-          <div className="mt-4 grid gap-3">
+          <div className="mt-5 grid gap-3">
             {question.options.map((option, optionIndex) => {
               const isSelected = selectedAnswers[questionIndex] === optionIndex;
               const isCorrect = status === 'completed' && question.answerIndex === optionIndex;
@@ -82,29 +86,49 @@ export const QuizPlayer = ({ quizId, quizData }: QuizPlayerProps) => {
                   type="button"
                   onClick={() => handleSelect(questionIndex, optionIndex)}
                   disabled={status === 'completed'}
-                  className={`rounded-xl border px-4 py-3 text-left transition ${
-                    isSelected ? 'border-white bg-white/10 text-white' : 'border-white/20 text-white/80'
-                  } ${isCorrect ? 'border-emerald-300 bg-emerald-300/10' : ''} ${
-                    isWrong ? 'border-red-300 bg-red-300/10' : ''
-                  } disabled:cursor-default`}
+                  className={`btn-squish rounded-2xl border-4 px-5 py-4 text-left text-lg font-bold transition-all ${
+                    isSelected && status !== 'completed' ? 'border-yellow-400 bg-yellow-100 text-yellow-900 shadow-lg' : 'border-purple-300 bg-white text-purple-900'
+                  } ${isCorrect ? 'border-green-400 bg-gradient-to-r from-green-100 to-emerald-100 text-green-700' : ''} ${
+                    isWrong ? 'border-red-400 bg-gradient-to-r from-red-100 to-pink-100 text-red-700' : ''
+                  } ${!isSelected && status !== 'completed' ? 'hover:border-blue-400 hover:bg-blue-50' : ''} disabled:cursor-default`}
                 >
-                  {option}
+                  <span className="flex items-center gap-3">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-current font-black">
+                      {answerLabels[optionIndex]}
+                    </span>
+                    <span className="flex-1">{option}</span>
+                    {isCorrect && <span className="text-2xl">✅</span>}
+                    {isWrong && <span className="text-2xl">❌</span>}
+                  </span>
                 </button>
               );
             })}
           </div>
 
           {status === 'completed' && question.explanation ? (
-            <p className="mt-3 text-sm text-white/70">💡 {question.explanation}</p>
+            <div className="mt-5 rounded-2xl border-4 border-yellow-300 bg-yellow-50 p-4">
+              <p className="text-base font-bold text-yellow-800">💡 {question.explanation}</p>
+            </div>
           ) : null}
         </div>
       ))}
 
-      {error ? <p className="text-sm text-red-300">{error}</p> : null}
+      {error ? (
+        <div className="rounded-2xl border-4 border-red-300 bg-red-50 px-5 py-4">
+          <p className="text-center text-lg font-bold text-red-600">⚠️ {error}</p>
+        </div>
+      ) : null}
 
       {status === 'completed' && score !== null ? (
-        <div className="rounded-2xl border border-emerald-300/40 bg-emerald-300/10 p-4 text-white">
-          Final score: <span className="text-2xl font-semibold">{score}%</span>
+        <div className="pop-in sticker-card rounded-3xl border-4 border-green-300 bg-gradient-to-br from-green-100 to-emerald-100 p-8 text-center shadow-2xl">
+          <div className="mb-4 text-6xl">{score >= 80 ? '🎉' : score >= 60 ? '😊' : '💪'}</div>
+          <h3 className="mb-3 text-3xl font-black text-green-700">
+            {score >= 80 ? 'Amazing Job!' : score >= 60 ? 'Great Effort!' : 'Keep Trying!'}
+          </h3>
+          <div className="text-5xl font-black text-green-600">
+            {score}%
+          </div>
+          <p className="mt-3 text-xl font-bold text-green-700">Final Score</p>
         </div>
       ) : null}
 
@@ -113,9 +137,9 @@ export const QuizPlayer = ({ quizId, quizData }: QuizPlayerProps) => {
           type="button"
           onClick={handleSubmit}
           disabled={status === 'submitting'}
-          className="rounded-2xl bg-white/90 px-6 py-3 text-lg font-semibold text-slate-900 transition hover:bg-white disabled:pointer-events-none disabled:opacity-50"
+          className="btn-3d btn-squish w-full rounded-3xl border-4 border-green-300 bg-gradient-to-r from-green-400 to-emerald-500 px-8 py-5 text-2xl font-black text-white shadow-2xl transition hover:from-green-500 hover:to-emerald-600 disabled:pointer-events-none disabled:opacity-50"
         >
-          {status === 'submitting' ? 'Submitting…' : 'Submit quiz'}
+          {status === 'submitting' ? '📝 Submitting…' : '🚀 Submit My Answers!'}
         </button>
       ) : null}
     </div>

@@ -12,17 +12,20 @@ export default async function LibraryPage() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold text-white">Library</h1>
-        <p className="text-sm text-slate-400">Books available to every student in Reading Buddy.</p>
+      <header className="pop-in rounded-3xl border-4 border-blue-300 bg-gradient-to-br from-blue-50 to-cyan-50 p-6 shadow-lg">
+        <div className="mb-2 inline-block rounded-2xl border-4 border-cyan-300 bg-cyan-400 px-4 py-1">
+          <p className="text-sm font-black uppercase tracking-wide text-cyan-900">📚 Book Collection</p>
+        </div>
+        <h1 className="text-3xl font-black text-blue-900">Library</h1>
+        <p className="text-base font-semibold text-blue-700">Explore all the amazing books in Reading Buddy!</p>
       </header>
 
       {books?.length ? (
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {books.map((book) => (
             <Link key={book.id} href={`/dashboard/student/read/${book.id}`}>
-              <li className="cursor-pointer rounded-2xl border border-slate-800/70 bg-slate-950/50 p-4 transition-colors hover:border-slate-700/80 hover:bg-slate-900/60">
-                <div className="relative mb-4 h-48 w-full overflow-hidden rounded-xl bg-slate-900">
+              <li className="sticker-card cursor-pointer rounded-3xl border-4 border-purple-300 bg-white p-5 shadow-lg transition hover:border-pink-400 hover:shadow-2xl">
+                <div className="relative mb-4 h-48 w-full overflow-hidden rounded-2xl bg-purple-100 shadow-md">
                   <Image
                     src={book.cover_url}
                     alt={book.title}
@@ -31,11 +34,11 @@ export default async function LibraryPage() {
                     sizes="(max-width: 768px) 100vw, 33vw"
                   />
                 </div>
-                <div className="space-y-1">
-                  <h2 className="text-lg font-semibold text-white">{book.title}</h2>
-                  <p className="text-sm text-slate-400">{book.author}</p>
+                <div className="space-y-2">
+                  <h2 className="text-xl font-black text-purple-900">{book.title}</h2>
+                  <p className="text-base font-bold text-purple-600">by {book.author}</p>
                   {book.description ? (
-                    <p className="text-sm text-slate-300 line-clamp-3">{book.description}</p>
+                    <p className="text-sm font-semibold text-purple-700 line-clamp-3">{book.description}</p>
                   ) : null}
                 </div>
               </li>
@@ -43,8 +46,11 @@ export default async function LibraryPage() {
           ))}
         </ul>
       ) : (
-        <div className="rounded-2xl border border-dashed border-slate-800/60 bg-slate-950/20 p-8 text-center text-slate-400">
-          No books yet. Librarians can add the first title from the Librarian dashboard.
+        <div className="rounded-3xl border-4 border-dashed border-yellow-300 bg-yellow-50 p-8 text-center shadow-lg">
+          <div className="mb-3 text-5xl">📚</div>
+          <p className="text-lg font-bold text-yellow-700">
+            No books yet! Librarians can add the first book from the Librarian dashboard.
+          </p>
         </div>
       )}
     </div>

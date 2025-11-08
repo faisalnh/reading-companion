@@ -37,14 +37,15 @@ export default async function StudentDashboardPage() {
     .order('earned_at', { ascending: false });
 
   return (
-    <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold text-white">My readings</h1>
-        <p className="text-sm text-slate-400">Pick up where you left off.</p>
+    <div className="space-y-8">
+      <header className="space-y-2 rounded-[32px] border border-white/60 bg-white/85 p-6 text-indigo-950 shadow-[0_25px_70px_rgba(147,118,255,0.25)]">
+        <p className="text-xs uppercase tracking-[0.3em] text-rose-400">Student zone</p>
+        <h1 className="text-3xl font-black">My readings</h1>
+        <p className="text-sm text-indigo-500">Pick up where you left off.</p>
       </header>
 
       {assignments?.length ? (
-        <ul className="grid gap-4 md:grid-cols-2">
+        <ul className="grid gap-5 md:grid-cols-2">
           {assignments.map((assignment) => {
             const book = assignment.books as {
               id: number;
@@ -53,15 +54,18 @@ export default async function StudentDashboardPage() {
               cover_url: string;
             };
             return (
-              <li key={assignment.book_id} className="rounded-2xl border border-white/10 bg-white/5 p-5">
+              <li
+                key={assignment.book_id}
+                className="rounded-[28px] border border-white/70 bg-gradient-to-br from-white via-pink-50 to-amber-50 p-5 text-indigo-900 shadow-[0_15px_50px_rgba(255,158,197,0.3)]"
+              >
                 <div className="flex flex-col gap-2">
-                  <p className="text-sm uppercase tracking-wide text-white/60">Assigned reading</p>
-                  <h2 className="text-lg font-semibold text-white">{book?.title ?? 'Unknown title'}</h2>
-                  <p className="text-sm text-white/70">{book?.author}</p>
-                  <p className="text-xs text-white/60">Current page: {assignment.current_page ?? 1}</p>
+                  <p className="text-xs uppercase tracking-wide text-rose-400">Assigned reading</p>
+                  <h2 className="text-xl font-black text-indigo-950">{book?.title ?? 'Unknown title'}</h2>
+                  <p className="text-sm text-indigo-500">{book?.author}</p>
+                  <p className="text-xs text-indigo-400">Current page: {assignment.current_page ?? 1}</p>
                   <Link
                     href={`/dashboard/student/read/${assignment.book_id}`}
-                    className="mt-2 inline-flex w-fit items-center gap-2 rounded-full bg-white/90 px-5 py-2 text-sm font-semibold text-slate-900 transition hover:bg-white"
+                    className="mt-3 inline-flex w-fit items-center gap-2 rounded-full bg-gradient-to-r from-indigo-400 to-sky-400 px-5 py-2 text-sm font-semibold text-white shadow-md transition hover:scale-105"
                   >
                     Continue reading →
                   </Link>
@@ -71,15 +75,15 @@ export default async function StudentDashboardPage() {
           })}
         </ul>
       ) : (
-        <div className="rounded-2xl border border-dashed border-white/15 bg-white/5 p-8 text-center text-white/70">
+        <div className="rounded-[28px] border border-dashed border-indigo-200 bg-white/80 p-8 text-center text-indigo-500">
           No assignments yet. Ask your teacher to assign a book from the class dashboard.
         </div>
       )}
 
-      <section className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-6">
+      <section className="space-y-3 rounded-[28px] border border-white/70 bg-white/85 p-6 text-indigo-950 shadow-[0_20px_60px_rgba(147,118,255,0.18)]">
         <div>
-          <h2 className="text-lg font-semibold text-white">Achievements</h2>
-          <p className="text-sm text-white/60">Badges unlocked from finished readings.</p>
+          <h2 className="text-xl font-black">Achievements</h2>
+          <p className="text-sm text-indigo-500">Badges unlocked from finished readings.</p>
         </div>
         {achievements?.length ? (
           <ul className="space-y-3">
@@ -88,35 +92,38 @@ export default async function StudentDashboardPage() {
               return (
                 <li
                   key={`${data?.name ?? 'achievement'}-${index}`}
-                  className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white"
+                  className="rounded-2xl border border-indigo-100 bg-white/70 p-4 text-sm text-indigo-900"
                 >
                   <p className="font-semibold">{data?.name ?? 'Unlocked badge'}</p>
-                  <p className="text-white/70">{data?.description}</p>
+                  <p className="text-indigo-500">{data?.description}</p>
                 </li>
               );
             })}
           </ul>
         ) : (
-          <p className="text-sm text-white/60">No badges yet. Finish books to unlock awards.</p>
+          <p className="text-sm text-indigo-400">No badges yet. Finish books to unlock awards.</p>
         )}
       </section>
 
-      <section className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-6">
+      <section className="space-y-3 rounded-[28px] border border-white/70 bg-white/85 p-6 text-indigo-950 shadow-[0_20px_60px_rgba(147,118,255,0.18)]">
         <div>
-          <h2 className="text-lg font-semibold text-white">Available quizzes</h2>
-          <p className="text-sm text-white/60">Test your knowledge on completed readings.</p>
+          <h2 className="text-xl font-black">Available quizzes</h2>
+          <p className="text-sm text-indigo-500">Test your knowledge on completed readings.</p>
         </div>
         {quizzes.length ? (
           <ul className="space-y-3">
             {quizzes.map((quiz) => (
-              <li key={quiz.id} className="flex items-center justify-between rounded-xl border border-white/10 bg-black/20 p-4">
+              <li
+                key={quiz.id}
+                className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-indigo-100 bg-white/70 p-4 text-indigo-900"
+              >
                 <div>
-                  <p className="text-sm uppercase tracking-wider text-white/60">Book</p>
-                  <p className="text-base font-semibold text-white">{quiz.books?.title ?? 'Untitled'}</p>
+                  <p className="text-xs uppercase tracking-[0.25em] text-indigo-400">Book</p>
+                  <p className="text-base font-semibold">{quiz.books?.title ?? 'Untitled'}</p>
                 </div>
                 <Link
                   href={`/dashboard/student/quiz/${quiz.id}`}
-                  className="rounded-full bg-white/90 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-white"
+                  className="rounded-full bg-gradient-to-r from-emerald-400 to-teal-400 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:scale-105"
                 >
                   Take quiz
                 </Link>
@@ -124,7 +131,7 @@ export default async function StudentDashboardPage() {
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-white/60">No quizzes yet. Librarians or teachers can generate them anytime.</p>
+          <p className="text-sm text-indigo-400">No quizzes yet. Librarians or teachers can generate them anytime.</p>
         )}
       </section>
     </div>

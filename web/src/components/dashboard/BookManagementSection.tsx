@@ -36,11 +36,11 @@ export const BookManagementSection = ({ books, genreOptions, languageOptions }: 
         isAddPanelOpen={showUploader}
       />
       {showUploader ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4 py-8">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-indigo-950/40 px-4 py-8 backdrop-blur-sm">
           <div
             role="dialog"
             aria-modal="true"
-            className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl border border-white/10 bg-slate-950/95 p-1 shadow-[0_25px_80px_rgba(0,0,0,0.65)]"
+            className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-[40px] border border-white/70 bg-gradient-to-br from-white via-pink-50 to-amber-50 p-1 shadow-[0_35px_120px_rgba(255,128,167,0.35)]"
           >
             <BookUploadForm
               genreOptions={genreOptions}

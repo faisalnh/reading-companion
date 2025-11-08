@@ -223,19 +223,19 @@ export const BookReader = ({ bookId, pdfUrl, initialPage = 1, expectedPages }: B
     : null;
 
   return (
-    <div className="space-y-4 rounded-2xl border border-white/15 bg-slate-950/40 p-6">
+    <div className="pop-in space-y-5 rounded-3xl border-4 border-purple-300 bg-gradient-to-br from-purple-50 via-pink-50 to-yellow-50 p-6 shadow-2xl md:p-8">
       <div className="flex flex-wrap items-center gap-4">
-        <div className="flex items-center gap-2 text-sm font-medium text-white">
+        <div className="flex items-center gap-3 text-lg font-black text-purple-900">
           <button
             type="button"
             onClick={() => turnBackward()}
             disabled={reachedBookStart}
-            className="rounded-lg border border-white/20 px-3 py-1 text-white transition hover:bg-white/10 disabled:pointer-events-none disabled:opacity-40"
+            className="btn-3d btn-squish rounded-2xl border-4 border-blue-300 bg-blue-100 px-5 py-2 text-blue-600 transition hover:bg-blue-200 disabled:pointer-events-none disabled:opacity-40"
           >
-            Turn Back
+            ⬅️ Back
           </button>
-          <span>
-            {displayMode === DISPLAY_MODES.SPREAD ? 'Pages ' : 'Page '}
+          <span className="rounded-2xl border-4 border-purple-300 bg-white px-5 py-2 text-base">
+            📄 {displayMode === DISPLAY_MODES.SPREAD ? 'Pages ' : 'Page '}
             {pageSpread.leftPage}
             {displayMode === DISPLAY_MODES.SPREAD && pageSpread.rightPage ? `-${pageSpread.rightPage}` : ''}
             {numPages ? ` / ${numPages}` : null}
@@ -244,82 +244,86 @@ export const BookReader = ({ bookId, pdfUrl, initialPage = 1, expectedPages }: B
             type="button"
             onClick={() => turnForward()}
             disabled={reachedBookEnd}
-            className="rounded-lg border border-white/20 px-3 py-1 text-white transition hover:bg-white/10 disabled:pointer-events-none disabled:opacity-40"
+            className="btn-3d btn-squish rounded-2xl border-4 border-pink-300 bg-gradient-to-r from-pink-400 to-rose-400 px-5 py-2 font-black text-white shadow-sm transition hover:from-pink-500 hover:to-rose-500 disabled:pointer-events-none disabled:opacity-40"
           >
-            Turn Page
+            Next ➡️
           </button>
         </div>
-        <div className="relative ml-auto flex items-center gap-2 text-sm text-white">
+        <div className="relative ml-auto flex items-center gap-2">
           <button
             type="button"
             onClick={() => setShowSettings((value) => !value)}
-            className="rounded-lg border border-white/30 px-3 py-1 text-white transition hover:bg-white/10"
+            className="btn-3d btn-squish rounded-2xl border-4 border-violet-300 bg-violet-100 px-4 py-2 text-base font-black text-violet-600 transition hover:bg-violet-200"
           >
-            Quick Settings
+            ⚙️ Settings
           </button>
         </div>
       </div>
 
       {showSettings ? (
-        <div className="flex flex-wrap items-center gap-6 rounded-xl border border-white/15 bg-slate-900/80 p-4 text-sm text-white">
-          <div className="flex items-center gap-2">
-            <span className="text-white/70">Zoom</span>
+        <div className="pop-in flex flex-wrap items-center gap-6 rounded-2xl border-4 border-yellow-300 bg-yellow-50 p-5 shadow-inner">
+          <div className="flex items-center gap-3">
+            <span className="text-base font-black text-yellow-700">🔍 Zoom</span>
             <button
               type="button"
               onClick={() => adjustZoom(-0.1)}
-              className="rounded-full border border-white/30 px-2 py-1 text-lg leading-none hover:bg-white/10"
+              className="btn-3d btn-squish rounded-2xl border-4 border-orange-300 bg-white px-4 py-2 text-xl font-black leading-none text-orange-600 hover:bg-orange-50"
             >
               –
             </button>
-            <span className="w-12 text-center font-medium">{zoomLabel}</span>
+            <span className="w-16 rounded-2xl border-4 border-yellow-300 bg-white px-3 py-2 text-center text-base font-black text-yellow-700">{zoomLabel}</span>
             <button
               type="button"
               onClick={() => adjustZoom(0.1)}
-              className="rounded-full border border-white/30 px-2 py-1 text-lg leading-none hover:bg-white/10"
+              className="btn-3d btn-squish rounded-2xl border-4 border-orange-300 bg-white px-4 py-2 text-xl font-black leading-none text-orange-600 hover:bg-orange-50"
             >
               +
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-white/70">Layout</span>
-            <div className="flex rounded-full border border-white/20 p-1">
+          <div className="flex items-center gap-3">
+            <span className="text-base font-black text-yellow-700">📖 Layout</span>
+            <div className="flex gap-2 rounded-2xl border-4 border-yellow-300 bg-white p-2">
               <button
                 type="button"
                 onClick={() => setDisplayMode(DISPLAY_MODES.SINGLE)}
                 className={clsx(
-                  'rounded-full px-3 py-1 text-xs font-semibold transition',
-                  displayMode === DISPLAY_MODES.SINGLE ? 'bg-white text-slate-900' : 'text-white/70',
+                  'btn-squish rounded-xl px-4 py-2 text-sm font-black transition',
+                  displayMode === DISPLAY_MODES.SINGLE ? 'bg-gradient-to-r from-blue-400 to-cyan-400 text-white shadow-md' : 'bg-gray-100 text-gray-600',
                 )}
               >
-                Single
+                📄 Single
               </button>
               <button
                 type="button"
                 onClick={() => setDisplayMode(DISPLAY_MODES.SPREAD)}
                 className={clsx(
-                  'rounded-full px-3 py-1 text-xs font-semibold transition',
-                  displayMode === DISPLAY_MODES.SPREAD ? 'bg-white text-slate-900' : 'text-white/70',
+                  'btn-squish rounded-xl px-4 py-2 text-sm font-black transition',
+                  displayMode === DISPLAY_MODES.SPREAD ? 'bg-gradient-to-r from-rose-400 to-orange-400 text-white shadow-md' : 'bg-gray-100 text-gray-600',
                 )}
               >
-                Spread
+                📖 Spread
               </button>
             </div>
           </div>
         </div>
       ) : null}
 
-      <div className="flex flex-wrap items-center gap-4 text-xs text-white/60">
-        <div className="text-xs text-white/60">
-          {status === 'saving' ? 'Saving progress…' : 'Progress auto-saves every few seconds.'}
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="rounded-2xl border-4 border-green-300 bg-green-50 px-4 py-2 text-base font-bold text-green-600">
+          {status === 'saving' ? '💾 Saving progress…' : '✅ Progress auto-saves!'}
         </div>
       </div>
 
-      {error ? <p className="text-sm text-red-300">{error}</p> : null}
+      {error ? (
+        <div className="rounded-2xl border-4 border-red-300 bg-red-50 px-4 py-3">
+          <p className="text-center text-base font-bold text-red-600">⚠️ {error}</p>
+        </div>
+      ) : null}
 
       <div
         ref={bookContainerRef}
-        className="book-viewer relative flex justify-center overflow-hidden rounded-xl border border-white/10 bg-gradient-to-b from-slate-900 to-slate-950"
+        className="book-viewer relative flex justify-center overflow-hidden rounded-3xl border-4 border-purple-400 bg-gradient-to-br from-purple-200 via-pink-200 to-orange-200 shadow-2xl"
         onClick={handleSpreadClick}
         role="presentation"
       >
@@ -329,7 +333,7 @@ export const BookReader = ({ bookId, pdfUrl, initialPage = 1, expectedPages }: B
             className={clsx('book-spread', spreadAnimationClass, !pageSpread.rightPage && 'book-spread--single')}
             onLoadSuccess={handleLoadSuccess}
             onLoadError={(err: Error) => setError(err.message)}
-            loading={<div className="p-8 text-white">Loading PDF…</div>}
+            loading={<div className="p-8 text-xl font-black text-purple-900">📚 Loading your book...</div>}
           >
             <PageComponent
               className="book-page book-page--left"
@@ -349,7 +353,7 @@ export const BookReader = ({ bookId, pdfUrl, initialPage = 1, expectedPages }: B
             ) : null}
           </DocumentComponent>
         ) : (
-          <div className="p-8 text-white">Preparing reader…</div>
+          <div className="p-8 text-xl font-black text-purple-900">🎨 Preparing your reader...</div>
         )}
 
         <button

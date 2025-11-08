@@ -3,10 +3,14 @@ import { BookManagementSection } from '@/components/dashboard/BookManagementSect
 import type { ManagedBookRecord } from '@/components/dashboard/BookManager';
 import type { AccessLevelValue } from '@/constants/accessLevels';
 import { QuizGenerator } from '@/components/dashboard/QuizGenerator';
+import { requireRole } from '@/lib/auth/roleCheck';
 
 const CURRENT_YEAR = new Date().getFullYear();
 
 export default async function LibrarianPage() {
+  // Only ADMIN and LIBRARIAN users can access this page
+  await requireRole(['ADMIN', 'LIBRARIAN']);
+
   const supabase = await createSupabaseServerClient();
   const { data: bookRows } = await supabase
     .from('books')

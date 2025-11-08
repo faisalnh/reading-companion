@@ -3,28 +3,69 @@
 @import "react-pdf/dist/Page/TextLayer.css";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Vibrant playful color palette */
+  --background: #FFFBEB;
+  --foreground: #1e1b4b;
+  --bubble-1: #FCD34D; /* Sunny yellow */
+  --bubble-2: #FB7185; /* Coral pink */
+  --bubble-3: #3B82F6; /* Electric blue */
+  --bubble-4: #84CC16; /* Lime green */
+  --bubble-5: #F97316; /* Orange */
+  --card: rgba(255, 255, 255, 0.85);
+  --card-border: rgba(255, 255, 255, 0.95);
+  --accent: #7C3AED; /* Vibrant purple */
+  --accent-dark: #6D28D9; /* Darker purple */
+  --accent-secondary: #3B82F6; /* Electric blue */
+  --success: #10B981; /* Green */
+  --warning: #F59E0B; /* Amber */
+  --error: #EF4444; /* Red */
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: 'Nunito', 'Baloo 2', 'Comic Neue', var(--font-geist-sans), system-ui, -apple-system, BlinkMacSystemFont,
+    'Segoe UI', sans-serif;
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+body {
+  background: radial-gradient(circle at 10% 20%, #FEF3C7, var(--background)) fixed;
+  color: var(--foreground);
+  font-family: 'Nunito', 'Baloo 2', 'Comic Neue', var(--font-geist-sans), system-ui, -apple-system, BlinkMacSystemFont,
+    'Segoe UI', sans-serif;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+  font-weight: 600;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Playful floating bubble decorations */
+body::before,
+body::after {
+  content: '';
+  position: fixed;
+  width: 45vw;
+  height: 45vw;
+  border-radius: 50%;
+  filter: blur(100px);
+  z-index: -2;
+  opacity: 0.5;
+  animation: floatBubble 20s ease-in-out infinite;
+}
+
+body::before {
+  background: linear-gradient(135deg, var(--bubble-1), var(--bubble-2));
+  top: -10vw;
+  left: -15vw;
+  animation-delay: 0s;
+}
+
+body::after {
+  background: linear-gradient(135deg, var(--bubble-3), var(--bubble-4));
+  bottom: -15vw;
+  right: -10vw;
+  animation-delay: 10s;
 }
 
 .book-viewer {
@@ -67,10 +108,10 @@ body {
 }
 
 .book-page {
-  background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.9), #fef9f1);
+  background: #ffffff;
   border-radius: 1rem;
   padding: 1rem;
-  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.3), 0 0 0 3px rgba(124, 58, 237, 0.2);
   transform-origin: left center;
   transition: transform 0.5s ease, box-shadow 0.5s ease;
 }
@@ -97,13 +138,13 @@ body {
 .book-hotspot--left {
   left: 0;
   border-radius: 1rem 0 0 1rem;
-  background: linear-gradient(90deg, rgba(15, 23, 42, 0.65), rgba(15, 23, 42, 0));
+  background: linear-gradient(90deg, rgba(124, 58, 237, 0.4), rgba(124, 58, 237, 0));
 }
 
 .book-hotspot--right {
   right: 0;
   border-radius: 0 1rem 1rem 0;
-  background: linear-gradient(270deg, rgba(15, 23, 42, 0.65), rgba(15, 23, 42, 0));
+  background: linear-gradient(270deg, rgba(124, 58, 237, 0.4), rgba(124, 58, 237, 0));
 }
 
 .book-hotspot:hover {
@@ -158,4 +199,226 @@ body {
   .book-viewer {
     padding: 0.5rem;
   }
+}
+
+/* ========================================
+   🎨 PLAYFUL ANIMATIONS & EFFECTS
+   ======================================== */
+
+/* Floating bubble animation */
+@keyframes floatBubble {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(30px, -30px) scale(1.1);
+  }
+  66% {
+    transform: translate(-20px, 20px) scale(0.9);
+  }
+}
+
+/* Bounce animation for buttons and interactive elements */
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Wiggle animation for fun hover effects */
+@keyframes wiggle {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-5deg);
+  }
+  75% {
+    transform: rotate(5deg);
+  }
+}
+
+/* Pop-in animation for cards and modals */
+@keyframes popIn {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Pulse animation for attention */
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+/* Rainbow text gradient animation */
+@keyframes rainbowText {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Confetti celebration (used for success states) */
+@keyframes confetti {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+/* Sparkle animation */
+@keyframes sparkle {
+  0%, 100% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Slide up animation for page transitions */
+@keyframes slideUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ========================================
+   🎪 UTILITY CLASSES FOR FUN EFFECTS
+   ======================================== */
+
+/* Button squish effect on click */
+.btn-squish:active {
+  transform: scale(0.95);
+  transition: transform 0.1s ease;
+}
+
+/* Hover bounce effect */
+.hover-bounce:hover {
+  animation: bounce 0.6s ease;
+}
+
+/* Hover wiggle effect */
+.hover-wiggle:hover {
+  animation: wiggle 0.5s ease;
+}
+
+/* Pop-in effect on mount */
+.pop-in {
+  animation: popIn 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* Pulse effect for notifications */
+.pulse-attention {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* Rainbow gradient text */
+.rainbow-text {
+  background: linear-gradient(
+    90deg,
+    #FF6B6B,
+    #FCD34D,
+    #84CC16,
+    #3B82F6,
+    #7C3AED,
+    #FB7185
+  );
+  background-size: 200% 200%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: rainbowText 3s ease infinite;
+}
+
+/* Sticker-style cards with rotation */
+.sticker-card {
+  transform: rotate(-2deg);
+  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.sticker-card:hover {
+  transform: rotate(0deg) scale(1.05);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+}
+
+/* 3D button effect */
+.btn-3d {
+  box-shadow:
+    0 4px 0 rgba(0, 0, 0, 0.1),
+    0 8px 16px rgba(0, 0, 0, 0.1);
+  transition: all 0.15s ease;
+}
+
+.btn-3d:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 6px 0 rgba(0, 0, 0, 0.1),
+    0 12px 24px rgba(0, 0, 0, 0.15);
+}
+
+.btn-3d:active {
+  transform: translateY(2px);
+  box-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.1),
+    0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Slide up page transition */
+.page-transition {
+  animation: slideUp 0.4s ease-out;
+}
+
+/* Floating shapes in background */
+.floating-shape {
+  position: fixed;
+  border-radius: 50%;
+  z-index: -1;
+  animation: floatBubble 15s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Fun focus state for inputs */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.2);
+  transform: scale(1.02);
+  transition: all 0.2s ease;
 }
