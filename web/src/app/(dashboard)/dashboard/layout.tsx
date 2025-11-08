@@ -16,31 +16,32 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
   const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
 
+  const roleLabel =
+    profile?.role === 'ADMIN'
+      ? '⚙️ Admin'
+      : profile?.role === 'TEACHER'
+        ? '👨‍🏫 Teacher'
+        : profile?.role === 'LIBRARIAN'
+          ? '👩‍💼 Librarian'
+          : profile?.role === 'STUDENT'
+            ? '🎒 Student'
+            : '📖 Reader';
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-yellow-50 text-purple-900">
-      <header className="border-b-4 border-purple-300 bg-gradient-to-r from-purple-100 via-pink-100 to-yellow-100 px-6 py-6 shadow-lg backdrop-blur">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <div className="mb-2 inline-block rounded-2xl border-4 border-yellow-300 bg-yellow-400 px-4 py-1">
-              <p className="text-sm font-black uppercase tracking-wide text-yellow-900">📚 Reading Buddy</p>
+      <header className="border-b border-purple-200 bg-gradient-to-r from-purple-50 via-pink-50 to-yellow-50 px-4 py-3 shadow-sm backdrop-blur">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
+          <div className="flex items-center gap-3">
+            <div className="inline-flex items-center gap-2 rounded-xl border border-yellow-200 bg-white/80 px-3 py-1 text-sm font-black uppercase tracking-wide text-yellow-700">
+              📚 Reading Buddy
             </div>
-            <h1 className="text-4xl font-black text-purple-700">
-              👋 Hello, {profile?.full_name ?? 'Reader'}!
-            </h1>
-            <div className="mt-2 inline-block rounded-2xl border-2 border-purple-300 bg-purple-200 px-4 py-1">
-              <p className="text-base font-black uppercase text-purple-700">
-                {profile?.role === 'ADMIN' && '⚙️ Admin'}
-                {profile?.role === 'TEACHER' && '👨‍🏫 Teacher'}
-                {profile?.role === 'LIBRARIAN' && '👩‍💼 Librarian'}
-                {profile?.role === 'STUDENT' && '🎒 Student'}
-                {!profile?.role && '📖 Reader'}
-              </p>
-            </div>
+            <p className="text-xs font-semibold uppercase text-purple-500">{roleLabel}</p>
           </div>
-          <SignOutButton />
-        </div>
-        <div className="mt-6">
-          <DashboardNav userRole={profile?.role as 'ADMIN' | 'LIBRARIAN' | 'TEACHER' | 'STUDENT' | null} />
+
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
+            <DashboardNav userRole={profile?.role as 'ADMIN' | 'LIBRARIAN' | 'TEACHER' | 'STUDENT' | null} />
+            <SignOutButton />
+          </div>
         </div>
       </header>
 
