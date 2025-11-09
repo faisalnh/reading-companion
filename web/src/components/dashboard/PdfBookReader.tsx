@@ -1,11 +1,14 @@
-'use client';
+"use client";
 
-import clsx from 'clsx';
-import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
-import type { PDFDocumentProxy } from 'react-pdf';
-import { evaluateAchievements, recordReadingProgress } from '@/app/(dashboard)/dashboard/student/actions';
+import clsx from "clsx";
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
+import type { PDFDocumentProxy } from "pdfjs-dist";
+import {
+  evaluateAchievements,
+  recordReadingProgress,
+} from "@/app/(dashboard)/dashboard/student/actions";
 
-type ReactPDFModule = typeof import('react-pdf');
+type ReactPDFModule = typeof import("react-pdf");
 
 type PdfBookReaderProps = {
   bookId: number;
@@ -14,26 +17,38 @@ type PdfBookReaderProps = {
   expectedPages?: number | null;
 };
 
-const workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
+const workerSrc = new URL(
+  "pdfjs-dist/build/pdf.worker.min.mjs",
+  import.meta.url,
+).toString();
 
 const DISPLAY_MODES = {
-  SPREAD: 'spread',
-  SINGLE: 'single',
+  SPREAD: "spread",
+  SINGLE: "single",
 } as const;
 
 type DisplayMode = (typeof DISPLAY_MODES)[keyof typeof DISPLAY_MODES];
 
-export const PdfBookReader = ({ bookId, pdfUrl, initialPage = 1, expectedPages }: PdfBookReaderProps) => {
+export const PdfBookReader = ({
+  bookId,
+  pdfUrl,
+  initialPage = 1,
+  expectedPages,
+}: PdfBookReaderProps) => {
   const [reactPdf, setReactPdf] = useState<ReactPDFModule | null>(null);
   const [numPages, setNumPages] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState(initialPage);
-  const [status, setStatus] = useState<'idle' | 'saving'>('idle');
+  const [status, setStatus] = useState<"idle" | "saving">("idle");
   const [error, setError] = useState<string | null>(null);
   const [basePageWidth, setBasePageWidth] = useState(360);
-  const [flipDirection, setFlipDirection] = useState<'forward' | 'backward'>('forward');
+  const [flipDirection, setFlipDirection] = useState<"forward" | "backward">(
+    "forward",
+  );
   const [flipAnimationId, setFlipAnimationId] = useState(0);
   const [hasInteracted, setHasInteracted] = useState(false);
-  const [displayMode, setDisplayMode] = useState<DisplayMode>(DISPLAY_MODES.SPREAD);
+  const [displayMode, setDisplayMode] = useState<DisplayMode>(
+    DISPLAY_MODES.SPREAD,
+  );
   const [showSettings, setShowSettings] = useState(false);
   const [zoom, setZoom] = useState(1);
   const achievementAwardedRef = useRef(false);
@@ -54,13 +69,19 @@ export const PdfBookReader = ({ bookId, pdfUrl, initialPage = 1, expectedPages }
     const leftPage = Math.max(rawLeft, 1);
     const rightCandidate = leftPage + 1;
     const rightPage =
-      displayMode === DISPLAY_MODES.SPREAD && numPages && rightCandidate <= numPages ? rightCandidate : null;
+      displayMode === DISPLAY_MODES.SPREAD &&
+      numPages &&
+      rightCandidate <= numPages
+        ? rightCandidate
+        : null;
 
     return { leftPage, rightPage };
   }, [normalizedPage, numPages, displayMode]);
 
   const lastVisiblePage =
-    displayMode === DISPLAY_MODES.SPREAD ? pageSpread.rightPage ?? pageSpread.leftPage : pageSpread.leftPage;
+    displayMode === DISPLAY_MODES.SPREAD
+      ? (pageSpread.rightPage ?? pageSpread.leftPage)
+      : pageSpread.leftPage;
   const pageIncrement = displayMode === DISPLAY_MODES.SPREAD ? 2 : 1;
   const effectivePageWidth = Math.round(basePageWidth * zoom);
   const zoomLabel = `${Math.round(zoom * 100)}%`;
@@ -70,13 +91,13 @@ export const PdfBookReader = ({ bookId, pdfUrl, initialPage = 1, expectedPages }
       return;
     }
     const timeout = setTimeout(() => {
-      setStatus('saving');
+      setStatus("saving");
       recordReadingProgress({ bookId, currentPage: lastVisiblePage })
         .catch((err) => {
           console.error(err);
-          setError('Unable to save progress automatically.');
+          setError("Unable to save progress automatically.");
         })
-        .finally(() => setStatus('idle'));
+        .finally(() => setStatus("idle"));
     }, 1200);
 
     return () => clearTimeout(timeout);
@@ -102,7 +123,7 @@ export const PdfBookReader = ({ bookId, pdfUrl, initialPage = 1, expectedPages }
 
   const goToPage = (page: number) => {
     setHasInteracted(true);
-    setFlipDirection(page >= normalizedPage ? 'forward' : 'backward');
+    setFlipDirection(page >= normalizedPage ? "forward" : "backward");
     setFlipAnimationId((id) => (id + 1) % 2);
     setCurrentPage(() => {
       if (!numPages) {
@@ -116,13 +137,13 @@ export const PdfBookReader = ({ bookId, pdfUrl, initialPage = 1, expectedPages }
   useEffect(() => {
     let isMounted = true;
 
-    import('react-pdf')
+    import("react-pdf")
       .then((module) => {
         if (!isMounted) {
           return;
         }
 
-        if (typeof window !== 'undefined') {
+        if (typeof window !== "undefined") {
           module.pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
         }
 
@@ -130,7 +151,7 @@ export const PdfBookReader = ({ bookId, pdfUrl, initialPage = 1, expectedPages }
       })
       .catch((err) => {
         console.error(err);
-        setError('Unable to load the PDF viewer.');
+        setError("Unable to load the PDF viewer.");
       });
 
     return () => {
@@ -139,7 +160,7 @@ export const PdfBookReader = ({ bookId, pdfUrl, initialPage = 1, expectedPages }
   }, []);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || !bookContainerRef.current) {
+    if (typeof window === "undefined" || !bookContainerRef.current) {
       return;
     }
 
@@ -148,7 +169,10 @@ export const PdfBookReader = ({ bookId, pdfUrl, initialPage = 1, expectedPages }
       const columns = displayMode === DISPLAY_MODES.SPREAD ? 2 : 1;
       const gutter = columns === 2 ? 32 : 24;
       const maxWidth = columns === 2 ? 420 : 560;
-      const computedWidth = Math.max(220, Math.min(maxWidth, Math.floor(containerWidth / columns) - gutter));
+      const computedWidth = Math.max(
+        220,
+        Math.min(maxWidth, Math.floor(containerWidth / columns) - gutter),
+      );
       setBasePageWidth(computedWidth);
     };
 
@@ -170,7 +194,10 @@ export const PdfBookReader = ({ bookId, pdfUrl, initialPage = 1, expectedPages }
 
   const adjustZoom = (delta: number) => {
     setZoom((value) => {
-      const next = Math.min(1.8, Math.max(0.6, parseFloat((value + delta).toFixed(2))));
+      const next = Math.min(
+        1.8,
+        Math.max(0.6, parseFloat((value + delta).toFixed(2))),
+      );
       return next;
     });
   };
@@ -190,7 +217,8 @@ export const PdfBookReader = ({ bookId, pdfUrl, initialPage = 1, expectedPages }
     const bounds = event.currentTarget.getBoundingClientRect();
     const clickX = event.clientX - bounds.left;
     const clickY = event.clientY - bounds.top;
-    const isColumnLayout = bounds.width < 600 || bounds.height > bounds.width * 1.4;
+    const isColumnLayout =
+      bounds.width < 600 || bounds.height > bounds.width * 1.4;
 
     if (isColumnLayout) {
       if (clickY > bounds.height / 2) {
@@ -213,13 +241,13 @@ export const PdfBookReader = ({ bookId, pdfUrl, initialPage = 1, expectedPages }
   const reachedBookStart = pageSpread.leftPage <= 1;
   const reachedBookEnd = Boolean(numPages) && lastVisiblePage >= numPages;
   const spreadAnimationClass = hasInteracted
-    ? flipDirection === 'forward'
+    ? flipDirection === "forward"
       ? flipAnimationId === 0
-        ? 'book-spread--forward-a'
-        : 'book-spread--forward-b'
+        ? "book-spread--forward-a"
+        : "book-spread--forward-b"
       : flipAnimationId === 0
-        ? 'book-spread--backward-a'
-        : 'book-spread--backward-b'
+        ? "book-spread--backward-a"
+        : "book-spread--backward-b"
     : null;
 
   return (
@@ -235,9 +263,11 @@ export const PdfBookReader = ({ bookId, pdfUrl, initialPage = 1, expectedPages }
             ⬅️ Back
           </button>
           <span className="rounded-2xl border-4 border-purple-300 bg-white px-5 py-2 text-base">
-            📄 {displayMode === DISPLAY_MODES.SPREAD ? 'Pages ' : 'Page '}
+            📄 {displayMode === DISPLAY_MODES.SPREAD ? "Pages " : "Page "}
             {pageSpread.leftPage}
-            {displayMode === DISPLAY_MODES.SPREAD && pageSpread.rightPage ? `-${pageSpread.rightPage}` : ''}
+            {displayMode === DISPLAY_MODES.SPREAD && pageSpread.rightPage
+              ? `-${pageSpread.rightPage}`
+              : ""}
             {numPages ? ` / ${numPages}` : null}
           </span>
           <button
@@ -263,7 +293,9 @@ export const PdfBookReader = ({ bookId, pdfUrl, initialPage = 1, expectedPages }
       {showSettings ? (
         <div className="pop-in flex flex-wrap items-center gap-6 rounded-2xl border-4 border-yellow-300 bg-yellow-50 p-5 shadow-inner">
           <div className="flex items-center gap-3">
-            <span className="text-base font-black text-yellow-700">🔍 Zoom</span>
+            <span className="text-base font-black text-yellow-700">
+              🔍 Zoom
+            </span>
             <button
               type="button"
               onClick={() => adjustZoom(-0.1)}
@@ -271,7 +303,9 @@ export const PdfBookReader = ({ bookId, pdfUrl, initialPage = 1, expectedPages }
             >
               –
             </button>
-            <span className="w-16 rounded-2xl border-4 border-yellow-300 bg-white px-3 py-2 text-center text-base font-black text-yellow-700">{zoomLabel}</span>
+            <span className="w-16 rounded-2xl border-4 border-yellow-300 bg-white px-3 py-2 text-center text-base font-black text-yellow-700">
+              {zoomLabel}
+            </span>
             <button
               type="button"
               onClick={() => adjustZoom(0.1)}
@@ -282,14 +316,18 @@ export const PdfBookReader = ({ bookId, pdfUrl, initialPage = 1, expectedPages }
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="text-base font-black text-yellow-700">📖 Layout</span>
+            <span className="text-base font-black text-yellow-700">
+              📖 Layout
+            </span>
             <div className="flex gap-2 rounded-2xl border-4 border-yellow-300 bg-white p-2">
               <button
                 type="button"
                 onClick={() => setDisplayMode(DISPLAY_MODES.SINGLE)}
                 className={clsx(
-                  'btn-squish rounded-xl px-4 py-2 text-sm font-black transition',
-                  displayMode === DISPLAY_MODES.SINGLE ? 'bg-gradient-to-r from-blue-400 to-cyan-400 text-white shadow-md' : 'bg-gray-100 text-gray-600',
+                  "btn-squish rounded-xl px-4 py-2 text-sm font-black transition",
+                  displayMode === DISPLAY_MODES.SINGLE
+                    ? "bg-gradient-to-r from-blue-400 to-cyan-400 text-white shadow-md"
+                    : "bg-gray-100 text-gray-600",
                 )}
               >
                 📄 Single
@@ -298,8 +336,10 @@ export const PdfBookReader = ({ bookId, pdfUrl, initialPage = 1, expectedPages }
                 type="button"
                 onClick={() => setDisplayMode(DISPLAY_MODES.SPREAD)}
                 className={clsx(
-                  'btn-squish rounded-xl px-4 py-2 text-sm font-black transition',
-                  displayMode === DISPLAY_MODES.SPREAD ? 'bg-gradient-to-r from-rose-400 to-orange-400 text-white shadow-md' : 'bg-gray-100 text-gray-600',
+                  "btn-squish rounded-xl px-4 py-2 text-sm font-black transition",
+                  displayMode === DISPLAY_MODES.SPREAD
+                    ? "bg-gradient-to-r from-rose-400 to-orange-400 text-white shadow-md"
+                    : "bg-gray-100 text-gray-600",
                 )}
               >
                 📖 Spread
@@ -311,13 +351,17 @@ export const PdfBookReader = ({ bookId, pdfUrl, initialPage = 1, expectedPages }
 
       <div className="flex flex-wrap items-center gap-4">
         <div className="rounded-2xl border-4 border-green-300 bg-green-50 px-4 py-2 text-base font-bold text-green-600">
-          {status === 'saving' ? '💾 Saving progress…' : '✅ Progress auto-saves!'}
+          {status === "saving"
+            ? "💾 Saving progress…"
+            : "✅ Progress auto-saves!"}
         </div>
       </div>
 
       {error ? (
         <div className="rounded-2xl border-4 border-red-300 bg-red-50 px-4 py-3">
-          <p className="text-center text-base font-bold text-red-600">⚠️ {error}</p>
+          <p className="text-center text-base font-bold text-red-600">
+            ⚠️ {error}
+          </p>
         </div>
       ) : null}
 
@@ -330,10 +374,18 @@ export const PdfBookReader = ({ bookId, pdfUrl, initialPage = 1, expectedPages }
         {DocumentComponent && PageComponent ? (
           <DocumentComponent
             file={pdfUrl}
-            className={clsx('book-spread', spreadAnimationClass, !pageSpread.rightPage && 'book-spread--single')}
+            className={clsx(
+              "book-spread",
+              spreadAnimationClass,
+              !pageSpread.rightPage && "book-spread--single",
+            )}
             onLoadSuccess={handleLoadSuccess}
             onLoadError={(err: Error) => setError(err.message)}
-            loading={<div className="p-8 text-xl font-black text-purple-900">📚 Loading your book...</div>}
+            loading={
+              <div className="p-8 text-xl font-black text-purple-900">
+                📚 Loading your book...
+              </div>
+            }
           >
             <PageComponent
               className="book-page book-page--left"
@@ -353,7 +405,9 @@ export const PdfBookReader = ({ bookId, pdfUrl, initialPage = 1, expectedPages }
             ) : null}
           </DocumentComponent>
         ) : (
-          <div className="p-8 text-xl font-black text-purple-900">🎨 Preparing your reader...</div>
+          <div className="p-8 text-xl font-black text-purple-900">
+            🎨 Preparing your reader...
+          </div>
         )}
 
         <button
