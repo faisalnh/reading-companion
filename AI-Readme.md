@@ -248,80 +248,80 @@ This checklist tracks your progress. Update it as you complete tasks.
 
 Phase 0: Infrastructure (User Task)
 
-[ ] User has set up MinIO on Proxmox.
+[x] User has set up MinIO on Proxmox.
 
-[ ] User has set up a reverse proxy with HTTPS for MinIO.
+[x] User has set up a reverse proxy with HTTPS for MinIO.
 
-[ ] User has set up the Supabase project.
+[x] User has set up the Supabase project.
 
-[ ] User has run the SQL schema above.
+[x] User has run the SQL schema above.
 
 Phase 1: Project Scaffolding
 
-[ ] Create Next.js project.
+[x] Create Next.js project.
 
-[ ] Install dependencies: @supabase/supabase-js, minio, @google/generative-ai, react-pdf, tailwindcss, shadcn-ui.
+[x] Install dependencies: @supabase/supabase-js, minio, @google/generative-ai, react-pdf, tailwindcss, shadcn-ui.
 
-[ ] Create .env.example.
+[x] Create .env.example.
 
-[ ] Create lib/supabase/client.ts (Browser client).
+[x] Create lib/supabase/client.ts (Browser client).
 
-[ ] Create lib/supabase/server.ts (Server client).
+[x] Create lib/supabase/server.ts (Server client).
 
-[ ] Create lib/minio.ts (Admin client).
+[x] Create lib/minio.ts (Admin client).
 
 Phase 2: Authentication & User Roles
 
-[ ] Create app/(auth)/login/page.tsx.
+[x] Create app/(auth)/login/page.tsx.
 
-[ ] Create app/(auth)/signup/page.tsx.
+[x] Create app/(auth)/signup/page.tsx.
 
-[ ] Implement password and Google OAuth logic.
+[x] Implement password and Google OAuth logic.
 
-[ ] Create middleware.ts for route protection (e.g., /dashboard/*).
+[x] Create middleware.ts for route protection (e.g., /dashboard/*).
 
 Phase 3: Librarian & Book Management
 
-[ ] Create app/(dashboard)/librarian/page.tsx.
+[x] Create app/(dashboard)/librarian/page.tsx.
 
-[ ] Create component for book upload form.
+[x] Create component for book upload form.
 
-[ ] Create Server Action to generate MinIO presigned URL.
+[x] Create Server Action to generate MinIO presigned URL.
 
-[ ] Implement client-side fetch (PUT) to upload to MinIO.
+[x] Implement client-side fetch (PUT) to upload to MinIO.
 
-[ ] Create Server Action to save book metadata to Supabase.
+[x] Create Server Action to save book metadata to Supabase.
 
-[ ] Create app/(dashboard)/library/page.tsx (Book gallery).
+[x] Create app/(dashboard)/library/page.tsx (Book gallery).
 
 Phase 4: Student Reader & Gamification
 
-[ ] Create app/(dashboard)/student/page.tsx.
+[x] Create app/(dashboard)/student/page.tsx.
 
-[ ] Create app/(dashboard)/student/read/[bookId]/page.tsx.
+[x] Create app/(dashboard)/student/read/[bookId]/page.tsx.
 
-[ ] Implement react-pdf component to load pdf_url from Supabase.
+[x] Implement react-pdf component to load pdf_url from Supabase.
 
-[ ] Create Server Action to save currentPage to student_books table.
+[x] Create Server Action to save currentPage to student_books table.
 
-[ ] Create achievements logic.
+[x] Create achievements logic.
 
 Phase 5: AI Quiz Generation
 
-[ ] Create "Generate Quiz" button for Librarians.
+[x] Create "Generate Quiz" button for Librarians.
 
-[ ] Create Server Action to call Gemini API.
+[x] Create Server Action to call Gemini API.
 
-[ ] Implement logic to save JSON quiz to quizzes table.
+[x] Implement logic to save JSON quiz to quizzes table.
 
-[ ] Create app/(dashboard)/student/quiz/[quizId]/page.tsx to take quiz.
+[x] Create app/(dashboard)/student/quiz/[quizId]/page.tsx to take quiz.
 
 Phase 6: Teacher & Admin Dashboards
 
-[ ] Create app/(dashboard)/teacher/page.tsx.
+[x] Create app/(dashboard)/teacher/page.tsx.
 
-[ ] Implement views for student progress.
+[x] Implement views for student progress.
 
-[ ] Create app/(dashboard)/admin/page.tsx.
+[x] Create app/(dashboard)/admin/page.tsx.
 
-[ ] Implement user role management.
+[x] Implement user role management.
