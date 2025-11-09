@@ -1,23 +1,24 @@
-import type { NextConfig } from 'next';
+import type { NextConfig } from "next";
 
-const minioHost = process.env.MINIO_ENDPOINT ?? 'storage.yourschool.com';
-const minioProtocol = process.env.MINIO_USE_SSL === 'false' ? 'http' : 'https';
-const minioPort = process.env.MINIO_PORT ?? '';
+const minioHost = process.env.MINIO_ENDPOINT ?? "storage.yourschool.com";
+const minioProtocol = process.env.MINIO_USE_SSL === "false" ? "http" : "https";
+const minioPort = process.env.MINIO_PORT ?? "";
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
+  output: "standalone", // Required for Docker deployment
   images: {
     remotePatterns: [
       {
-        protocol: minioProtocol as 'http' | 'https',
+        protocol: minioProtocol as "http" | "https",
         hostname: minioHost,
-        port: minioPort === '' ? undefined : minioPort,
-        pathname: '/**',
+        port: minioPort === "" ? undefined : minioPort,
+        pathname: "/**",
       },
       {
-        protocol: 'https',
-        hostname: 'minioapi.mws.web.id',
-        pathname: '/**',
+        protocol: "https",
+        hostname: "minioapi.mws.web.id",
+        pathname: "/**",
       },
     ],
   },
