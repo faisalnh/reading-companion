@@ -117,10 +117,16 @@ export default async function StudentDashboardPage() {
         {achievements?.length ? (
           <ul className="space-y-3">
             {achievements.map((achievement, index) => {
-              const data = achievement.achievements as {
+              // Extract first achievement from array if it exists
+              const achievementData =
+                Array.isArray(achievement.achievements) &&
+                achievement.achievements.length > 0
+                  ? achievement.achievements[0]
+                  : achievement.achievements;
+              const data = achievementData as {
                 name: string;
                 description: string;
-              };
+              } | null;
               return (
                 <li
                   key={`${data?.name ?? "achievement"}-${index}`}
