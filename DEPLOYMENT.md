@@ -11,7 +11,9 @@ This guide covers deploying Reading Buddy to your Proxmox server using Dockge as
 
 ## Deployment Steps
 
-### 1. Prepare Environment Variables
+### Method 1: Automated Deployment (Recommended)
+
+#### 1. Prepare Environment Variables
 
 Create a `.env.production` file in the project root:
 
@@ -39,15 +41,48 @@ MINIO_BUCKET_NAME=reading-buddy
 GEMINI_API_KEY=AIzaSy...
 ```
 
-### 2. Deploy Using Dockge
+#### 2. Run the Deployment Script
 
-#### Option A: Using Dockge UI
+The `deploy.sh` script will automatically transfer all files to your Proxmox server:
+
+```bash
+# Set your Proxmox server details
+export PROXMOX_USER=root
+export PROXMOX_HOST=192.168.1.100
+
+# Run the deployment script
+./deploy.sh
+```
+
+The script will:
+- Transfer all project files to `/opt/stacks/reading-buddy` on your Proxmox server
+- Copy your environment variables
+- Exclude unnecessary files (node_modules, .git, etc.)
+
+#### 3. Deploy in Dockge
 
 1. Open Dockge in your browser
-2. Click "Create Stack" or "Add Stack"
-3. Name your stack: `reading-buddy`
-4. Copy the contents of `compose.yaml` into the editor
-5. Go to the "Environment Variables" section
+2. Click "Create Stack" or "Add Stack"  
+3. **Name**: `reading-buddy`
+4. **Path**: `/opt/stacks/reading-buddy`
+5. Copy the contents of `compose.production.yaml` into the editor
+6. Click "Deploy"
+
+### Method 2: Manual Deployment
+
+#### Option A: Using Dockge UI with Local Files
+
+1. Manually copy all files to your Proxmox server:
+   ```bash
+   # On your local machine
+   scp -r . root@your-proxmox-ip:/opt/stacks/reading-buddy/
+   ```
+
+2. Open Dockge in your browser
+3. Click "Create Stack" or "Add Stack"
+4. Name your stack: `reading-buddy`
+5. Copy the contents of `compose.production.yaml` into the editor
+6. Go to the "Environment Variables" section
 6. Paste the contents of your `.env.production` file
 7. Click "Deploy" or "Start"
 
