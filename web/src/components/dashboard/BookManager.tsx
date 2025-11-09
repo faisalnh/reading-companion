@@ -1,10 +1,16 @@
-'use client';
+"use client";
 
-import { useId, useMemo, useState, useTransition, type FormEvent, type ChangeEvent } from 'react';
-import { useRouter } from 'next/navigation';
-import clsx from 'clsx';
-import { deleteBook, updateBookMetadata } from '@/app/(dashboard)/dashboard/librarian/actions';
-import { ACCESS_LEVEL_OPTIONS, type AccessLevelValue } from '@/constants/accessLevels';
+import { useMemo, useState, useTransition, type ChangeEvent } from "react";
+import { useRouter } from "next/navigation";
+import clsx from "clsx";
+import {
+  deleteBook,
+  renderBookImages,
+} from "@/app/(dashboard)/dashboard/librarian/actions";
+import {
+  ACCESS_LEVEL_OPTIONS,
+  type AccessLevelValue,
+} from "@/constants/accessLevels";
 
 export type ManagedBookRecord = {
   id: number;
@@ -21,14 +27,44 @@ export type ManagedBookRecord = {
   coverUrl: string;
   createdAt?: string | null;
   accessLevels: AccessLevelValue[];
+  pageImagesCount?: number | null;
+  pageImagesRenderedAt?: string | null;
 };
 
-const ACCESS_BADGES: Record<AccessLevelValue, { label: string; color: string; emoji: string }> = {
-  KINDERGARTEN: { label: 'K', color: 'bg-gradient-to-r from-emerald-400 to-teal-400 text-white border-emerald-300', emoji: '🎨' },
-  LOWER_ELEMENTARY: { label: 'LE', color: 'bg-gradient-to-r from-sky-400 to-blue-400 text-white border-sky-300', emoji: '📚' },
-  UPPER_ELEMENTARY: { label: 'UE', color: 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white border-blue-300', emoji: '🔬' },
-  JUNIOR_HIGH: { label: 'JH', color: 'bg-gradient-to-r from-purple-500 to-pink-500 text-white border-purple-300', emoji: '🎓' },
-  TEACHERS_STAFF: { label: 'TS', color: 'bg-gradient-to-r from-amber-400 to-orange-400 text-white border-amber-300', emoji: '👨‍🏫' },
+const ACCESS_BADGES: Record<
+  AccessLevelValue,
+  { label: string; color: string; emoji: string }
+> = {
+  KINDERGARTEN: {
+    label: "K",
+    color:
+      "bg-gradient-to-r from-emerald-400 to-teal-400 text-white border-emerald-300",
+    emoji: "🎨",
+  },
+  LOWER_ELEMENTARY: {
+    label: "LE",
+    color:
+      "bg-gradient-to-r from-sky-400 to-blue-400 text-white border-sky-300",
+    emoji: "📚",
+  },
+  UPPER_ELEMENTARY: {
+    label: "UE",
+    color:
+      "bg-gradient-to-r from-blue-500 to-indigo-500 text-white border-blue-300",
+    emoji: "🔬",
+  },
+  JUNIOR_HIGH: {
+    label: "JH",
+    color:
+      "bg-gradient-to-r from-purple-500 to-pink-500 text-white border-purple-300",
+    emoji: "🎓",
+  },
+  TEACHERS_STAFF: {
+    label: "TS",
+    color:
+      "bg-gradient-to-r from-amber-400 to-orange-400 text-white border-amber-300",
+    emoji: "👨‍🏫",
+  },
 };
 
 type BookManagerProps = {
@@ -36,57 +72,35 @@ type BookManagerProps = {
   genreOptions?: string[];
   languageOptions?: string[];
   onAddBookClick?: () => void;
+  onEditBookClick?: (book: ManagedBookRecord) => void;
   isAddPanelOpen?: boolean;
 };
-
-type EditFormState = {
-  isbn: string;
-  title: string;
-  author: string;
-  publisher: string;
-  publicationYear: string;
-  genre: string;
-  language: string;
-  description: string;
-  accessLevels: AccessLevelValue[];
-};
-
-const createEditFormState = (book: ManagedBookRecord): EditFormState => ({
-  isbn: book.isbn,
-  title: book.title,
-  author: book.author,
-  publisher: book.publisher,
-  publicationYear: String(book.publicationYear || ''),
-  genre: book.genre,
-  language: book.language,
-  description: book.description ?? '',
-  accessLevels: [...book.accessLevels],
-});
 
 export const BookManager = ({
   books,
   genreOptions = [],
   languageOptions = [],
   onAddBookClick,
+  onEditBookClick,
   isAddPanelOpen = false,
 }: BookManagerProps) => {
   const router = useRouter();
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [editForm, setEditForm] = useState<EditFormState | null>(null);
-  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [feedback, setFeedback] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
   const [deletePendingId, setDeletePendingId] = useState<number | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [genreFilter, setGenreFilter] = useState<string>('ALL');
-  const [languageFilter, setLanguageFilter] = useState<string>('ALL');
-  const [authorFilter, setAuthorFilter] = useState<string>('ALL');
-  const [publisherFilter, setPublisherFilter] = useState<string>('ALL');
-  const [yearFilter, setYearFilter] = useState<string>('ALL');
-  const [accessFilter, setAccessFilter] = useState<AccessLevelValue | 'ALL'>('ALL');
-  const [isUpdating, startUpdateTransition] = useTransition();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [genreFilter, setGenreFilter] = useState<string>("ALL");
+  const [languageFilter, setLanguageFilter] = useState<string>("ALL");
+  const [authorFilter, setAuthorFilter] = useState<string>("ALL");
+  const [publisherFilter, setPublisherFilter] = useState<string>("ALL");
+  const [yearFilter, setYearFilter] = useState<string>("ALL");
+  const [accessFilter, setAccessFilter] = useState<AccessLevelValue | "ALL">(
+    "ALL",
+  );
   const [isDeleting, startDeleteTransition] = useTransition();
-
-  const genreListId = useId();
-  const languageListId = useId();
+  const [renderingBookId, setRenderingBookId] = useState<number | null>(null);
 
   const sortedBooks = useMemo(
     () =>
@@ -94,58 +108,71 @@ export const BookManager = ({
         if (!a.createdAt || !b.createdAt) {
           return b.id - a.id;
         }
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        return (
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
       }),
     [books],
   );
 
-  const activeBook = editingId ? books.find((book) => book.id === editingId) ?? null : null;
   const authorOptions = useMemo(
     () =>
-      Array.from(new Set(books.map((book) => book.author).filter((value) => Boolean(value && value.trim())))).sort(
-        (a, b) => a.localeCompare(b),
-      ),
+      Array.from(
+        new Set(
+          books
+            .map((book) => book.author)
+            .filter((value) => Boolean(value && value.trim())),
+        ),
+      ).sort((a, b) => a.localeCompare(b)),
     [books],
   );
   const publisherOptions = useMemo(
     () =>
-      Array.from(new Set(books.map((book) => book.publisher).filter((value) => Boolean(value && value.trim())))).sort(
-        (a, b) => a.localeCompare(b),
-      ),
+      Array.from(
+        new Set(
+          books
+            .map((book) => book.publisher)
+            .filter((value) => Boolean(value && value.trim())),
+        ),
+      ).sort((a, b) => a.localeCompare(b)),
     [books],
   );
   const yearOptions = useMemo(
     () =>
-      Array.from(new Set(books.map((book) => book.publicationYear).filter((value) => Number.isFinite(value)))).sort(
-        (a, b) => b - a,
-      ),
+      Array.from(
+        new Set(
+          books
+            .map((book) => book.publicationYear)
+            .filter((value) => Number.isFinite(value)),
+        ),
+      ).sort((a, b) => b - a),
     [books],
   );
 
   const filteredBooks = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
     return sortedBooks.filter((book) => {
-      if (genreFilter !== 'ALL' && book.genre !== genreFilter) {
+      if (genreFilter !== "ALL" && book.genre !== genreFilter) {
         return false;
       }
 
-      if (languageFilter !== 'ALL' && book.language !== languageFilter) {
+      if (languageFilter !== "ALL" && book.language !== languageFilter) {
         return false;
       }
 
-      if (authorFilter !== 'ALL' && book.author !== authorFilter) {
+      if (authorFilter !== "ALL" && book.author !== authorFilter) {
         return false;
       }
 
-      if (publisherFilter !== 'ALL' && book.publisher !== publisherFilter) {
+      if (publisherFilter !== "ALL" && book.publisher !== publisherFilter) {
         return false;
       }
 
-      if (yearFilter !== 'ALL' && String(book.publicationYear) !== yearFilter) {
+      if (yearFilter !== "ALL" && String(book.publicationYear) !== yearFilter) {
         return false;
       }
 
-      if (accessFilter !== 'ALL' && !book.accessLevels.includes(accessFilter)) {
+      if (accessFilter !== "ALL" && !book.accessLevels.includes(accessFilter)) {
         return false;
       }
 
@@ -153,76 +180,25 @@ export const BookManager = ({
         return true;
       }
 
-      const haystack = [book.title, book.author, book.isbn, book.publisher].filter(Boolean).join(' ').toLowerCase();
+      const haystack = [book.title, book.author, book.isbn, book.publisher]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
       return haystack.includes(term);
     });
-  }, [sortedBooks, searchTerm, genreFilter, languageFilter, authorFilter, publisherFilter, yearFilter, accessFilter]);
+  }, [
+    sortedBooks,
+    searchTerm,
+    genreFilter,
+    languageFilter,
+    authorFilter,
+    publisherFilter,
+    yearFilter,
+    accessFilter,
+  ]);
 
   const handleEdit = (book: ManagedBookRecord) => {
-    setEditingId(book.id);
-    setEditForm(createEditFormState(book));
-    setFeedback(null);
-  };
-
-  const handleFieldChange = (field: Exclude<keyof EditFormState, 'accessLevels'>, value: string) => {
-    setEditForm((prev) => (prev ? { ...prev, [field]: value } : prev));
-  };
-
-  const handleUpdateSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!editingId || !editForm) {
-      return;
-    }
-
-    const trimmed = {
-      isbn: editForm.isbn.trim(),
-      title: editForm.title.trim(),
-      author: editForm.author.trim(),
-      publisher: editForm.publisher.trim(),
-      genre: editForm.genre.trim(),
-      language: editForm.language.trim(),
-      description: editForm.description.trim(),
-      publicationYear: Number(editForm.publicationYear),
-    };
-    const accessLevels = editForm.accessLevels;
-
-    if (
-      !trimmed.isbn ||
-      !trimmed.title ||
-      !trimmed.author ||
-      !trimmed.publisher ||
-      !trimmed.genre ||
-      !trimmed.language ||
-      !Number.isFinite(trimmed.publicationYear) ||
-      accessLevels.length === 0
-    ) {
-      setFeedback({ type: 'error', message: 'All metadata fields and access levels are required.' });
-      return;
-    }
-
-    startUpdateTransition(async () => {
-      try {
-        await updateBookMetadata({
-          id: editingId,
-          isbn: trimmed.isbn,
-          title: trimmed.title,
-          author: trimmed.author,
-          publisher: trimmed.publisher,
-          publicationYear: trimmed.publicationYear,
-          genre: trimmed.genre,
-          language: trimmed.language,
-          description: trimmed.description || null,
-          accessLevels,
-        });
-        setFeedback({ type: 'success', message: 'Book metadata updated.' });
-        setEditingId(null);
-        setEditForm(null);
-        router.refresh();
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unable to update book.';
-        setFeedback({ type: 'error', message });
-      }
-    });
+    onEditBookClick?.(book);
   };
 
   const handleDelete = (book: ManagedBookRecord) => {
@@ -235,27 +211,54 @@ export const BookManager = ({
     startDeleteTransition(async () => {
       try {
         await deleteBook({ id: book.id });
-        if (editingId === book.id) {
-          setEditingId(null);
-          setEditForm(null);
-        }
         router.refresh();
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unable to delete book.';
-        setFeedback({ type: 'error', message });
+        const message =
+          error instanceof Error ? error.message : "Unable to delete book.";
+        setFeedback({ type: "error", message });
       } finally {
         setDeletePendingId(null);
       }
     });
   };
 
+  const handleRender = async (book: ManagedBookRecord) => {
+    setRenderingBookId(book.id);
+    setFeedback(null);
+
+    try {
+      const result = await renderBookImages(book.id);
+      if ("success" in result && result.success) {
+        setFeedback({ type: "success", message: result.message });
+        router.refresh();
+      } else if ("error" in result) {
+        setFeedback({
+          type: "error",
+          message: result.error || "Rendering failed",
+        });
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unable to render book.";
+      setFeedback({ type: "error", message });
+    } finally {
+      setRenderingBookId(null);
+    }
+  };
+
   return (
     <section className="space-y-5 rounded-[32px] border border-white/60 bg-white/85 p-6 text-indigo-950 shadow-[0_25px_90px_rgba(119,65,255,0.18)] backdrop-blur-xl md:p-8">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-rose-400">Librarian tools</p>
-          <h2 className="text-2xl font-black tracking-tight text-indigo-950">Library Catalog</h2>
-          <p className="text-sm text-indigo-500">Review, edit, or remove uploaded eBooks.</p>
+          <p className="text-xs uppercase tracking-[0.3em] text-rose-400">
+            Librarian tools
+          </p>
+          <h2 className="text-2xl font-black tracking-tight text-indigo-950">
+            Library Catalog
+          </h2>
+          <p className="text-sm text-indigo-500">
+            Review, edit, or remove uploaded eBooks.
+          </p>
         </div>
         <div className="flex flex-col items-stretch gap-2 text-sm sm:flex-row sm:items-center sm:gap-3">
           <button
@@ -264,16 +267,19 @@ export const BookManager = ({
             disabled={isAddPanelOpen}
             className="btn-3d btn-squish rounded-2xl border-4 border-pink-300 bg-gradient-to-r from-pink-400 to-fuchsia-500 px-6 py-3 text-lg font-black text-white shadow-lg transition hover:from-pink-500 hover:to-fuchsia-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-400/60 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isAddPanelOpen ? '📚 Adding eBook…' : '➕ Add New eBook'}
+            {isAddPanelOpen ? "📚 Adding eBook…" : "➕ Add New eBook"}
           </button>
           {feedback ? (
             <span
               className={clsx(
-                'rounded-2xl border-4 px-5 py-3 text-base font-black',
-                feedback.type === 'success' ? 'border-emerald-300 bg-emerald-100 text-emerald-700' : 'border-rose-300 bg-rose-100 text-rose-700',
+                "rounded-2xl border-4 px-5 py-3 text-base font-black",
+                feedback.type === "success"
+                  ? "border-emerald-300 bg-emerald-100 text-emerald-700"
+                  : "border-rose-300 bg-rose-100 text-rose-700",
               )}
             >
-              {feedback.type === 'success' ? '✅ ' : '⚠️ '}{feedback.message}
+              {feedback.type === "success" ? "✅ " : "⚠️ "}
+              {feedback.message}
             </span>
           ) : null}
         </div>
@@ -281,17 +287,23 @@ export const BookManager = ({
 
       <div className="grid gap-4 rounded-2xl border-4 border-purple-300 bg-gradient-to-br from-purple-50 to-pink-50 p-5 shadow-lg sm:grid-cols-3">
         <label className="flex flex-col gap-2">
-          <span className="text-sm font-black uppercase tracking-wide text-purple-600">🔍 Search</span>
+          <span className="text-sm font-black uppercase tracking-wide text-purple-600">
+            🔍 Search
+          </span>
           <input
             type="search"
             placeholder="Title, author, ISBN..."
             value={searchTerm}
-            onChange={(event: ChangeEvent<HTMLInputElement>) => setSearchTerm(event.target.value)}
+            onChange={(event: ChangeEvent<HTMLInputElement>) =>
+              setSearchTerm(event.target.value)
+            }
             className="rounded-2xl border-4 border-purple-300 bg-white px-4 py-2 font-semibold text-purple-900 outline-none transition-all"
           />
         </label>
         <label className="flex flex-col gap-2">
-          <span className="text-sm font-black uppercase tracking-wide text-purple-600">✍️ Author</span>
+          <span className="text-sm font-black uppercase tracking-wide text-purple-600">
+            ✍️ Author
+          </span>
           <select
             value={authorFilter}
             onChange={(event) => setAuthorFilter(event.target.value)}
@@ -306,7 +318,9 @@ export const BookManager = ({
           </select>
         </label>
         <label className="flex flex-col gap-2">
-          <span className="text-sm font-black uppercase tracking-wide text-purple-600">🏢 Publisher</span>
+          <span className="text-sm font-black uppercase tracking-wide text-purple-600">
+            🏢 Publisher
+          </span>
           <select
             value={publisherFilter}
             onChange={(event) => setPublisherFilter(event.target.value)}
@@ -321,7 +335,9 @@ export const BookManager = ({
           </select>
         </label>
         <label className="flex flex-col gap-2">
-          <span className="text-sm font-black uppercase tracking-wide text-purple-600">📅 Year</span>
+          <span className="text-sm font-black uppercase tracking-wide text-purple-600">
+            📅 Year
+          </span>
           <select
             value={yearFilter}
             onChange={(event) => setYearFilter(event.target.value)}
@@ -336,7 +352,9 @@ export const BookManager = ({
           </select>
         </label>
         <label className="flex flex-col gap-2">
-          <span className="text-sm font-black uppercase tracking-wide text-purple-600">🎭 Genre</span>
+          <span className="text-sm font-black uppercase tracking-wide text-purple-600">
+            🎭 Genre
+          </span>
           <select
             value={genreFilter}
             onChange={(event) => setGenreFilter(event.target.value)}
@@ -351,7 +369,9 @@ export const BookManager = ({
           </select>
         </label>
         <label className="flex flex-col gap-2">
-          <span className="text-sm font-black uppercase tracking-wide text-purple-600">🌍 Language</span>
+          <span className="text-sm font-black uppercase tracking-wide text-purple-600">
+            🌍 Language
+          </span>
           <select
             value={languageFilter}
             onChange={(event) => setLanguageFilter(event.target.value)}
@@ -366,10 +386,14 @@ export const BookManager = ({
           </select>
         </label>
         <label className="flex flex-col gap-2">
-          <span className="text-sm font-black uppercase tracking-wide text-purple-600">👥 Access</span>
+          <span className="text-sm font-black uppercase tracking-wide text-purple-600">
+            👥 Access
+          </span>
           <select
             value={accessFilter}
-            onChange={(event) => setAccessFilter(event.target.value as AccessLevelValue | 'ALL')}
+            onChange={(event) =>
+              setAccessFilter(event.target.value as AccessLevelValue | "ALL")
+            }
             className="rounded-2xl border-4 border-purple-300 bg-white px-4 py-2 font-semibold text-purple-900 outline-none transition-all"
           >
             <option value="ALL">All access levels</option>
@@ -387,7 +411,7 @@ export const BookManager = ({
           <p className="text-lg font-bold text-yellow-700">
             {books.length === 0
               ? '📚 No books yet! Click "Add New eBook" to get started!'
-              : '🔍 No books match your filters. Try adjusting them!'}
+              : "🔍 No books match your filters. Try adjusting them!"}
           </p>
         </div>
       ) : (
@@ -395,23 +419,48 @@ export const BookManager = ({
           <table className="min-w-full divide-y-4 divide-blue-200 text-sm text-purple-900">
             <thead className="bg-gradient-to-r from-blue-100 via-purple-100 to-pink-100">
               <tr>
-                <th className="px-4 py-3 text-left text-base font-black text-blue-600">📖 Title</th>
-                <th className="px-4 py-3 text-left text-base font-black text-blue-600">🔢 ISBN</th>
-                <th className="px-4 py-3 text-left text-base font-black text-blue-600">✍️ Author</th>
-                <th className="px-4 py-3 text-left text-base font-black text-blue-600">🏢 Publisher</th>
-                <th className="px-4 py-3 text-left text-base font-black text-blue-600">📅 Year</th>
-                <th className="px-4 py-3 text-left text-base font-black text-blue-600">🎭 Genre</th>
-                <th className="px-4 py-3 text-left text-base font-black text-blue-600">🌍 Language</th>
-                <th className="px-4 py-3 text-left text-base font-black text-blue-600">👥 Access</th>
-                <th className="px-4 py-3 text-right text-base font-black text-blue-600">⚡ Actions</th>
+                <th className="px-4 py-3 text-left text-base font-black text-blue-600">
+                  📖 Title
+                </th>
+                <th className="px-4 py-3 text-left text-base font-black text-blue-600">
+                  🔢 ISBN
+                </th>
+                <th className="px-4 py-3 text-left text-base font-black text-blue-600">
+                  ✍️ Author
+                </th>
+                <th className="px-4 py-3 text-left text-base font-black text-blue-600">
+                  🏢 Publisher
+                </th>
+                <th className="px-4 py-3 text-left text-base font-black text-blue-600">
+                  📅 Year
+                </th>
+                <th className="px-4 py-3 text-left text-base font-black text-blue-600">
+                  🎭 Genre
+                </th>
+                <th className="px-4 py-3 text-left text-base font-black text-blue-600">
+                  🌍 Language
+                </th>
+                <th className="px-4 py-3 text-left text-base font-black text-blue-600">
+                  👥 Access
+                </th>
+                <th className="px-4 py-3 text-right text-base font-black text-blue-600">
+                  ⚡ Actions
+                </th>
               </tr>
             </thead>
             <tbody>
               {filteredBooks.map((book) => (
-                <tr key={book.id} className="border-b-2 border-blue-100 bg-transparent hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50">
+                <tr
+                  key={book.id}
+                  className="border-b-2 border-blue-100 bg-transparent hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50"
+                >
                   <td className="px-4 py-3">
-                    <div className="font-bold text-purple-900">{book.title}</div>
-                    <div className="text-xs font-semibold text-purple-600">{book.author}</div>
+                    <div className="font-bold text-purple-900">
+                      {book.title}
+                    </div>
+                    <div className="text-xs font-semibold text-purple-600">
+                      {book.author}
+                    </div>
                   </td>
                   <td className="px-4 py-3">{book.isbn}</td>
                   <td className="px-4 py-3">{book.author}</td>
@@ -428,8 +477,9 @@ export const BookManager = ({
                             <span
                               key={`${book.id}-${level}`}
                               className={clsx(
-                                'rounded-2xl border-2 px-3 py-1 text-xs font-black uppercase tracking-wide shadow-sm',
-                                badge?.color ?? 'bg-indigo-100 text-indigo-600 border-indigo-300',
+                                "rounded-2xl border-2 px-3 py-1 text-xs font-black uppercase tracking-wide shadow-sm",
+                                badge?.color ??
+                                  "bg-indigo-100 text-indigo-600 border-indigo-300",
                               )}
                             >
                               {badge?.emoji} {badge?.label ?? level.slice(0, 2)}
@@ -443,6 +493,18 @@ export const BookManager = ({
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
+                      {!book.pageImagesCount && (
+                        <button
+                          type="button"
+                          onClick={() => handleRender(book)}
+                          disabled={renderingBookId === book.id}
+                          className="rounded-full border border-emerald-200 bg-white/80 p-2 text-emerald-600 shadow-sm transition hover:bg-emerald-50 disabled:opacity-40"
+                          aria-label="Render book images"
+                          title="Render book images"
+                        >
+                          {renderingBookId === book.id ? "⏳" : "🎨"}
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => handleEdit(book)}
@@ -468,178 +530,6 @@ export const BookManager = ({
           </table>
         </div>
       )}
-
-      <div className="rounded-xl border border-white/10 bg-black/20 p-5">
-        {editingId && editForm ? (
-          <form onSubmit={handleUpdateSubmit} className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-            <label className="space-y-1 text-sm font-semibold text-indigo-800">
-              ISBN
-              <input
-                value={editForm.isbn}
-                onChange={(event) => handleFieldChange('isbn', event.target.value)}
-                className="w-full rounded-xl border border-indigo-200 bg-white px-3 py-2 text-indigo-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
-                required
-              />
-            </label>
-            <label className="space-y-1 text-sm font-semibold text-indigo-800">
-              Title
-              <input
-                value={editForm.title}
-                onChange={(event) => handleFieldChange('title', event.target.value)}
-                className="w-full rounded-xl border border-indigo-200 bg-white px-3 py-2 text-indigo-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
-                required
-              />
-            </label>
-            <label className="space-y-1 text-sm font-semibold text-indigo-800">
-              Author
-              <input
-                value={editForm.author}
-                onChange={(event) => handleFieldChange('author', event.target.value)}
-                className="w-full rounded-xl border border-indigo-200 bg-white px-3 py-2 text-indigo-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
-                required
-              />
-            </label>
-            <label className="space-y-1 text-sm font-semibold text-indigo-800">
-              Publisher
-              <input
-                value={editForm.publisher}
-                onChange={(event) => handleFieldChange('publisher', event.target.value)}
-                className="w-full rounded-xl border border-indigo-200 bg-white px-3 py-2 text-indigo-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
-                required
-              />
-            </label>
-            <label className="space-y-1 text-sm font-semibold text-indigo-800">
-              Year
-              <input
-                type="number"
-                min={1800}
-                max={3000}
-                value={editForm.publicationYear}
-                onChange={(event) => handleFieldChange('publicationYear', event.target.value)}
-                className="w-full rounded-xl border border-indigo-200 bg-white px-3 py-2 text-indigo-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
-                required
-              />
-            </label>
-            <label className="space-y-1 text-sm font-semibold text-indigo-800">
-              Genre
-              <input
-                list={genreListId}
-                value={editForm.genre}
-                onChange={(event) => handleFieldChange('genre', event.target.value)}
-                className="w-full rounded-xl border border-indigo-200 bg-white px-3 py-2 text-indigo-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
-                required
-              />
-              {genreOptions.length ? (
-                <datalist id={genreListId}>
-                  {genreOptions.map((option) => (
-                    <option key={option} value={option} />
-                  ))}
-                </datalist>
-              ) : null}
-            </label>
-            <label className="space-y-1 text-sm font-semibold text-indigo-800">
-              Language
-              <input
-                list={languageListId}
-                value={editForm.language}
-                onChange={(event) => handleFieldChange('language', event.target.value)}
-                className="w-full rounded-xl border border-indigo-200 bg-white px-3 py-2 text-indigo-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
-                required
-              />
-              {languageOptions.length ? (
-                <datalist id={languageListId}>
-                  {languageOptions.map((option) => (
-                    <option key={option} value={option} />
-                  ))}
-                </datalist>
-              ) : null}
-            </label>
-            <fieldset className="md:col-span-2 space-y-1 text-sm font-semibold text-indigo-800">
-              <legend>Access</legend>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {ACCESS_LEVEL_OPTIONS.map((option) => (
-                  <label
-                    key={option.value}
-                    className="flex items-center gap-2 rounded-xl border border-indigo-100 bg-white/70 px-3 py-2 text-sm text-indigo-900"
-                  >
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 rounded border-indigo-300 text-fuchsia-500 focus:ring-2 focus:ring-rose-200"
-                      checked={Boolean(editForm?.accessLevels.includes(option.value))}
-                      onChange={() => toggleEditAccessLevel(option.value)}
-                    />
-                    <span>{option.label}</span>
-                  </label>
-                ))}
-              </div>
-              <p className="text-xs text-indigo-500">Select the audiences who can access this book.</p>
-            </fieldset>
-            <label className="md:col-span-2 space-y-1 text-sm font-semibold text-indigo-800">
-              Description
-              <textarea
-                rows={3}
-                value={editForm.description}
-                onChange={(event) => handleFieldChange('description', event.target.value)}
-                className="w-full rounded-xl border border-indigo-200 bg-white px-3 py-2 text-indigo-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
-                placeholder="Optional summary for teachers and quiz generation."
-              />
-            </label>
-            {activeBook ? (
-              <div className="md:col-span-2 flex flex-wrap items-center gap-3 text-xs text-indigo-500">
-                <span>
-                  Page count: <strong className="text-indigo-900">{activeBook.pageCount ?? '—'}</strong>
-                </span>
-                <a
-                  href={activeBook.pdfUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="rounded-full border border-indigo-200 px-4 py-1 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-50"
-                >
-                  View PDF
-                </a>
-                <a
-                  href={activeBook.coverUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="rounded-full border border-indigo-200 px-4 py-1 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-50"
-                >
-                  View Cover
-                </a>
-              </div>
-            ) : null}
-            <div className="md:col-span-2 flex flex-wrap gap-3">
-              <button
-                type="submit"
-                disabled={isUpdating}
-                className="rounded-full bg-gradient-to-r from-indigo-400 to-sky-400 px-6 py-2 font-semibold text-white shadow-lg transition hover:scale-105 disabled:opacity-50"
-              >
-                {isUpdating ? 'Saving…' : 'Save changes'}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setEditingId(null);
-                  setEditForm(null);
-                  setFeedback(null);
-                }}
-                className="rounded-full border border-indigo-200 px-6 py-2 font-semibold text-indigo-700 transition hover:bg-indigo-50"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        ) : null}
-      </div>
     </section>
   );
 };
-  const toggleEditAccessLevel = (level: AccessLevelValue) => {
-    setEditForm((prev) => {
-      if (!prev) return prev;
-      const exists = prev.accessLevels.includes(level);
-      return {
-        ...prev,
-        accessLevels: exists ? prev.accessLevels.filter((value) => value !== level) : [...prev.accessLevels, level],
-      };
-    });
-  };

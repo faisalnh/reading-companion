@@ -116,7 +116,31 @@ CREATE TABLE books (
   -- These are the *public, read-only* URLs from MinIO
   pdf_url TEXT NOT NULL,
   cover_url TEXT NOT NULL,
+  isbn TEXT,
+  publisher TEXT,
+  publication_year INT,
+  genre TEXT,
+  language TEXT,
+  page_images_prefix TEXT,
+  page_images_count INT,
+  page_images_rendered_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TYPE book_access_level AS ENUM (
+  'KINDERGARTEN',
+  'LOWER_ELEMENTARY',
+  'UPPER_ELEMENTARY',
+  'JUNIOR_HIGH',
+  'TEACHERS_STAFF'
+);
+
+CREATE TABLE book_access (
+  id SERIAL PRIMARY KEY,
+  book_id INT NOT NULL REFERENCES books(id) ON DELETE CASCADE,
+  access_level book_access_level NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (book_id, access_level)
 );
 
 -- 4. Classes Table
@@ -142,6 +166,18 @@ CREATE TABLE class_books (
   assigned_at TIMESTAMPTZ DEFAULT NOW(),
   due_date TIMESTAMPTZ,
   PRIMARY KEY (class_id, book_id)
+);
+
+CREATE TABLE book_render_jobs (
+  id SERIAL PRIMARY KEY,
+  book_id INT NOT NULL REFERENCES books(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'pending',
+  total_pages INT,
+  processed_pages INT,
+  error_message TEXT,
+  started_at TIMESTAMPTZ,
+  finished_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- 7. Student Reading Progress
@@ -220,6 +256,8 @@ ALTER TABLE quizzes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE quiz_attempts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE achievements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE student_achievements ENABLE ROW LEVEL SECURITY;
+ALTER TABLE book_access ENABLE ROW LEVEL SECURITY;
+ALTER TABLE book_render_jobs ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS Policies (Examples - User must add more)
 CREATE POLICY "Public profiles are viewable by everyone."
@@ -236,6 +274,20 @@ CREATE POLICY "Books are viewable by all authenticated users."
 
 CREATE POLICY "Librarians and Admins can manage books."
   ON books FOR ALL USING (
+    (SELECT role FROM profiles WHERE id = auth.uid()) IN ('LIBRARIAN', 'ADMIN')
+  );
+
+CREATE POLICY "Book access readable by authenticated users"
+  ON book_access FOR SELECT USING (auth.role() = 'authenticated');
+
+CREATE POLICY "Librarians manage book access"
+  ON book_access FOR ALL USING (
+    (SELECT role FROM profiles WHERE id = auth.uid()) IN ('LIBRARIAN', 'ADMIN')
+  )
+  WITH CHECK ((SELECT role FROM profiles WHERE id = auth.uid()) IN ('LIBRARIAN', 'ADMIN'));
+
+CREATE POLICY "Admins view render jobs"
+  ON book_render_jobs FOR SELECT USING (
     (SELECT role FROM profiles WHERE id = auth.uid()) IN ('LIBRARIAN', 'ADMIN')
   );
 
@@ -293,6 +345,12 @@ Phase 3: Librarian & Book Management
 [x] Create Server Action to save book metadata to Supabase.
 
 [x] Create app/(dashboard)/library/page.tsx (Book gallery).
+
+Hybrid Page Rendering Pipeline
+
+- Every successful book upload now queues a record in `book_render_jobs`. A CLI worker converts PDFs to per-page JPEGs and writes them to MinIO so the student reader can use the 3D flip experience.
+- Run `npm run render:book-images` to process the next pending job, or `npm run render:book-images -- --bookId=123` to force a specific title. The script streams the PDF from MinIO, rasterizes each page with `pdfjs-dist + canvas`, uploads the JPEGs under `book-pages/<bookId>/page-0001.jpg`, and updates the `books.page_images_*` fields when finished.
+- The student reader automatically switches to the flip-book mode whenever `page_images_count > 0`, but always falls back to the PDF-based react-pdf renderer while images are still rendering (or if the user prefers the classic experience).
 
 Phase 4: Student Reader & Gamification
 

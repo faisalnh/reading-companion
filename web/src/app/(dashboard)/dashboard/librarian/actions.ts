@@ -1,12 +1,16 @@
-'use server';
+"use server";
 
-import { randomUUID } from 'node:crypto';
-import { revalidatePath } from 'next/cache';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { getMinioBucketName, getMinioClient } from '@/lib/minio';
-import { getSupabaseAdminClient } from '@/lib/supabase/admin';
-import { createSupabaseServerClient } from '@/lib/supabase/server';
-import type { AccessLevelValue } from '@/constants/accessLevels';
+import { randomUUID } from "node:crypto";
+import { revalidatePath } from "next/cache";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { getMinioBucketName, getMinioClient } from "@/lib/minio";
+import { getSupabaseAdminClient } from "@/lib/supabase/admin";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  buildPublicObjectUrl,
+  getObjectKeyFromPublicUrl,
+} from "@/lib/minioUtils";
+import type { AccessLevelValue } from "@/constants/accessLevels";
 
 export const checkCurrentUserRole = async () => {
   const supabase = await createSupabaseServerClient();
@@ -16,14 +20,14 @@ export const checkCurrentUserRole = async () => {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { error: 'Not signed in' };
+    return { error: "Not signed in" };
   }
 
   // Query without .single() first to check for duplicates
   const { data: profiles, error: profileError } = await supabase
-    .from('profiles')
-    .select('role, full_name')
-    .eq('id', user.id);
+    .from("profiles")
+    .select("role, full_name")
+    .eq("id", user.id);
 
   const hasDuplicates = profiles && profiles.length > 1;
   const profile = profiles?.[0]; // Take the first one if multiple exist
@@ -45,98 +49,43 @@ const ensureLibrarianOrAdmin = async () => {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    throw new Error('You must be signed in to manage books.');
+    throw new Error("You must be signed in to manage books.");
   }
 
-  const { data: profiles, error: profileError } = await supabase.from('profiles').select('role').eq('id', user.id);
+  const { data: profiles, error: profileError } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id);
 
   if (profileError) {
-    throw new Error(`Profile query failed: ${profileError.message}. Please contact admin.`);
+    throw new Error(
+      `Profile query failed: ${profileError.message}. Please contact admin.`,
+    );
   }
 
   if (!profiles || profiles.length === 0) {
-    throw new Error('No profile found for your account. Please contact admin to set up your profile.');
+    throw new Error(
+      "No profile found for your account. Please contact admin to set up your profile.",
+    );
   }
 
   if (profiles.length > 1) {
-    console.warn(`Warning: User ${user.id} has ${profiles.length} duplicate profiles. Using the first one.`);
+    console.warn(
+      `Warning: User ${user.id} has ${profiles.length} duplicate profiles. Using the first one.`,
+    );
   }
 
   const profile = profiles[0];
 
-  if (!profile || !['LIBRARIAN', 'ADMIN'].includes(profile.role)) {
+  if (!profile || !["LIBRARIAN", "ADMIN"].includes(profile.role)) {
     throw new Error(
-      `Insufficient permissions. Your current role is: ${profile?.role || 'unknown'}. Only LIBRARIAN or ADMIN users can manage books.`,
+      `Insufficient permissions. Your current role is: ${profile?.role || "unknown"}. Only LIBRARIAN or ADMIN users can manage books.`,
     );
   }
 };
 
-const getPublicBaseUrl = () => {
-  const endpoint = process.env.MINIO_ENDPOINT;
-  const port = process.env.MINIO_PORT;
-  const useSSL = process.env.MINIO_USE_SSL !== 'false';
-
-  if (!endpoint) {
-    throw new Error('MINIO_ENDPOINT is not configured.');
-  }
-
-  const protocol = useSSL ? 'https' : 'http';
-  const defaultPort = useSSL ? '443' : '80';
-  const portSegment = port && port !== defaultPort ? `:${port}` : '';
-
-  return `${protocol}://${endpoint}${portSegment}`;
-};
-
-const sanitizeFilename = (filename: string) => {
-  return filename.replace(/[^a-zA-Z0-9_.-]/g, '_');
-};
-
-const decodeSegment = (segment: string) => {
-  try {
-    return decodeURIComponent(segment);
-  } catch {
-    return segment;
-  }
-};
-
-const getObjectKeyFromPublicUrl = (publicUrl: string | null | undefined) => {
-  if (!publicUrl) {
-    return null;
-  }
-
-  const bucketName = getMinioBucketName();
-  const publicBaseUrl = getPublicBaseUrl();
-  const normalizedUrl = publicUrl.trim();
-
-  if (!normalizedUrl) {
-    return null;
-  }
-
-  const prefix = `${publicBaseUrl.replace(/\/$/, '')}/${bucketName}/`;
-  if (normalizedUrl.startsWith(prefix)) {
-    return normalizedUrl.slice(prefix.length);
-  }
-
-  try {
-    const parsed = new URL(normalizedUrl);
-    const pathParts = parsed.pathname
-      .split('/')
-      .filter(Boolean)
-      .map((segment) => decodeSegment(segment));
-
-    if (!pathParts.length) {
-      return null;
-    }
-
-    if (pathParts[0] === bucketName) {
-      return pathParts.slice(1).join('/');
-    }
-
-    return pathParts.join('/');
-  } catch {
-    return null;
-  }
-};
+const sanitizeFilename = (filename: string) =>
+  filename.replace(/[^a-zA-Z0-9_.-]/g, "_");
 
 export const generatePresignedUploadUrls = async (input: {
   pdfFilename: string;
@@ -144,7 +93,6 @@ export const generatePresignedUploadUrls = async (input: {
 }) => {
   const minioClient = getMinioClient();
   const bucketName = getMinioBucketName();
-  const publicBaseUrl = getPublicBaseUrl();
 
   const sanitizedPdfFilename = sanitizeFilename(input.pdfFilename);
   const sanitizedCoverFilename = sanitizeFilename(input.coverFilename);
@@ -162,8 +110,8 @@ export const generatePresignedUploadUrls = async (input: {
     coverUploadUrl,
     pdfObjectKey,
     coverObjectKey,
-    pdfPublicUrl: `${publicBaseUrl}/${bucketName}/${pdfObjectKey}`,
-    coverPublicUrl: `${publicBaseUrl}/${bucketName}/${coverObjectKey}`,
+    pdfPublicUrl: buildPublicObjectUrl(pdfObjectKey),
+    coverPublicUrl: buildPublicObjectUrl(coverObjectKey),
   };
 };
 
@@ -184,13 +132,13 @@ export const saveBookMetadata = async (input: {
   await ensureLibrarianOrAdmin();
 
   if (!input.accessLevels?.length) {
-    throw new Error('At least one access level is required.');
+    throw new Error("At least one access level is required.");
   }
 
   const supabaseAdmin = getSupabaseAdminClient();
 
   const { data: insertedBook, error } = await supabaseAdmin
-    .from('books')
+    .from("books")
     .insert({
       isbn: input.isbn,
       title: input.title,
@@ -204,25 +152,43 @@ export const saveBookMetadata = async (input: {
       pdf_url: input.pdfUrl,
       cover_url: input.coverUrl,
     })
-    .select('id')
+    .select("id")
     .single();
 
   if (error || !insertedBook) {
-    console.error('Book insert error:', error);
-    throw error ?? new Error('Unable to insert book.');
+    console.error("Book insert error:", error);
+    throw error ?? new Error("Unable to insert book.");
   }
 
   const { error: accessInsertError } = await supabaseAdmin
-    .from('book_access')
-    .insert(input.accessLevels.map((level) => ({ book_id: insertedBook.id, access_level: level })));
+    .from("book_access")
+    .insert(
+      input.accessLevels.map((level) => ({
+        book_id: insertedBook.id,
+        access_level: level,
+      })),
+    );
 
   if (accessInsertError) {
-    console.error('Book access insert error:', accessInsertError);
+    console.error("Book access insert error:", accessInsertError);
     throw accessInsertError;
   }
 
-  revalidatePath('/dashboard/library');
-  revalidatePath('/dashboard/librarian');
+  const { error: jobInsertError } = await supabaseAdmin
+    .from("book_render_jobs")
+    .insert({
+      book_id: insertedBook.id,
+      status: "pending",
+    });
+
+  if (jobInsertError) {
+    console.error("Unable to queue render job:", jobInsertError.message);
+  }
+
+  revalidatePath("/dashboard/library");
+  revalidatePath("/dashboard/librarian");
+
+  return { bookId: insertedBook.id };
 };
 
 export const updateBookMetadata = async (input: {
@@ -236,50 +202,75 @@ export const updateBookMetadata = async (input: {
   language: string;
   description?: string | null;
   accessLevels: AccessLevelValue[];
+  pdfUrl?: string;
+  coverUrl?: string;
+  pageCount?: number | null;
 }) => {
   await ensureLibrarianOrAdmin();
 
   const supabaseAdmin = getSupabaseAdminClient();
+
+  const updateData: Record<string, unknown> = {
+    isbn: input.isbn,
+    title: input.title,
+    author: input.author,
+    publisher: input.publisher,
+    publication_year: input.publicationYear,
+    genre: input.genre,
+    language: input.language,
+    description: input.description ?? null,
+  };
+
+  // Add optional fields if provided
+  if (input.pdfUrl !== undefined) {
+    updateData.pdf_url = input.pdfUrl;
+  }
+  if (input.coverUrl !== undefined) {
+    updateData.cover_url = input.coverUrl;
+  }
+  if (input.pageCount !== undefined) {
+    updateData.page_count = input.pageCount;
+  }
+
   const { error } = await supabaseAdmin
-    .from('books')
-    .update({
-      isbn: input.isbn,
-      title: input.title,
-      author: input.author,
-      publisher: input.publisher,
-      publication_year: input.publicationYear,
-      genre: input.genre,
-      language: input.language,
-      description: input.description ?? null,
-    })
-    .eq('id', input.id);
+    .from("books")
+    .update(updateData)
+    .eq("id", input.id);
 
   if (error) {
-    console.error('Book update error:', error);
+    console.error("Book update error:", error);
     throw error;
   }
 
   if (!input.accessLevels?.length) {
-    throw new Error('At least one access level is required.');
+    throw new Error("At least one access level is required.");
   }
 
-  const { error: deleteAccessError } = await supabaseAdmin.from('book_access').delete().eq('book_id', input.id);
+  const { error: deleteAccessError } = await supabaseAdmin
+    .from("book_access")
+    .delete()
+    .eq("book_id", input.id);
   if (deleteAccessError) {
-    console.error('Book access delete error:', deleteAccessError);
+    console.error("Book access delete error:", deleteAccessError);
     throw deleteAccessError;
   }
 
   const { error: insertAccessError } = await supabaseAdmin
-    .from('book_access')
-    .insert(input.accessLevels.map((level) => ({ book_id: input.id, access_level: level })));
+    .from("book_access")
+    .insert(
+      input.accessLevels.map((level) => ({
+        book_id: input.id,
+        access_level: level,
+      })),
+    );
 
   if (insertAccessError) {
-    console.error('Book access insert error:', insertAccessError);
+    console.error("Book access insert error:", insertAccessError);
     throw insertAccessError;
   }
 
-  revalidatePath('/dashboard/library');
-  revalidatePath('/dashboard/librarian');
+  revalidatePath("/dashboard/library");
+  revalidatePath("/dashboard/librarian");
 
   return { success: true };
 };
@@ -292,13 +283,13 @@ export const deleteBook = async (input: { id: number }) => {
   const bucketName = getMinioBucketName();
 
   const { data: book, error: bookError } = await supabaseAdmin
-    .from('books')
-    .select('pdf_url, cover_url')
-    .eq('id', input.id)
+    .from("books")
+    .select("pdf_url, cover_url")
+    .eq("id", input.id)
     .single();
 
   if (bookError) {
-    throw new Error('Unable to locate book for deletion.');
+    throw new Error("Unable to locate book for deletion.");
   }
 
   const pdfObjectKey = getObjectKeyFromPublicUrl(book?.pdf_url);
@@ -309,15 +300,18 @@ export const deleteBook = async (input: { id: number }) => {
     await minioClient.removeObject(bucketName, objectKey);
   }
 
-  const { error } = await supabaseAdmin.from('books').delete().eq('id', input.id);
+  const { error } = await supabaseAdmin
+    .from("books")
+    .delete()
+    .eq("id", input.id);
 
   if (error) {
-    console.error('Book delete error:', error);
+    console.error("Book delete error:", error);
     throw error;
   }
 
-  revalidatePath('/dashboard/library');
-  revalidatePath('/dashboard/librarian');
+  revalidatePath("/dashboard/library");
+  revalidatePath("/dashboard/librarian");
 
   return { success: true };
 };
@@ -329,33 +323,33 @@ export const generateQuizForBook = async (input: { bookId: number }) => {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    throw new Error('You must be signed in to generate a quiz.');
+    throw new Error("You must be signed in to generate a quiz.");
   }
 
   const { data: book, error: bookError } = await supabase
-    .from('books')
-    .select('id, title, description')
-    .eq('id', input.bookId)
+    .from("books")
+    .select("id, title, description")
+    .eq("id", input.bookId)
     .single();
 
   if (bookError || !book) {
-    throw new Error('Book not found.');
+    throw new Error("Book not found.");
   }
 
   if (!book.description) {
-    throw new Error('Add a summary/description before generating a quiz.');
+    throw new Error("Add a summary/description before generating a quiz.");
   }
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    throw new Error('GEMINI_API_KEY is not configured.');
+    throw new Error("GEMINI_API_KEY is not configured.");
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({
-    model: 'gemini-1.5-flash',
+    model: "gemini-1.5-flash",
     generationConfig: {
-      responseMimeType: 'application/json',
+      responseMimeType: "application/json",
       temperature: 0.4,
     },
   });
@@ -387,30 +381,134 @@ export const generateQuizForBook = async (input: { bookId: number }) => {
   const text = response.text();
 
   if (!text) {
-    throw new Error('Gemini did not return any content.');
+    throw new Error("Gemini did not return any content.");
   }
 
   let quizPayload: unknown;
   try {
     quizPayload = JSON.parse(text);
   } catch (err) {
-    throw new Error(`Gemini returned invalid JSON: ${err instanceof Error ? err.message : 'unknown error'}`);
+    throw new Error(
+      `Gemini returned invalid JSON: ${err instanceof Error ? err.message : "unknown error"}`,
+    );
   }
 
   const { data: inserted, error: quizError } = await supabase
-    .from('quizzes')
+    .from("quizzes")
     .insert({
       book_id: book.id,
       created_by_id: user.id,
       questions: quizPayload,
     })
-    .select('id')
+    .select("id")
     .single();
 
   if (quizError || !inserted) {
-    throw quizError ?? new Error('Failed to save quiz.');
+    throw quizError ?? new Error("Failed to save quiz.");
   }
 
-  revalidatePath('/dashboard/library');
+  revalidatePath("/dashboard/library");
   return { quizId: inserted.id, quiz: quizPayload };
+};
+
+export const renderBookImages = async (bookId: number) => {
+  "use server";
+
+  const supabase = getSupabaseAdminClient();
+
+  // Check if book exists
+  const { data: book, error: bookError } = await supabase
+    .from("books")
+    .select("id, title")
+    .eq("id", bookId)
+    .single();
+
+  if (bookError || !book) {
+    return { error: "Book not found" };
+  }
+
+  // Create or update render job
+  const { data: existingJob } = await supabase
+    .from("book_render_jobs")
+    .select("id, status")
+    .eq("book_id", bookId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  let jobId: number;
+
+  if (existingJob && existingJob.status === "pending") {
+    jobId = existingJob.id;
+  } else {
+    const { data: newJob, error: jobError } = await supabase
+      .from("book_render_jobs")
+      .insert({ book_id: bookId, status: "pending" })
+      .select("id")
+      .single();
+
+    if (jobError || !newJob) {
+      return { error: "Failed to create render job" };
+    }
+
+    jobId = newJob.id;
+  }
+
+  // Trigger rendering in background (non-blocking)
+  // Note: In production, this should use a proper job queue
+  const { spawn } = await import("child_process");
+  const scriptPath = `${process.cwd()}/scripts/render-book-images.ts`;
+
+  spawn("npx", ["tsx", scriptPath, `--bookId=${bookId}`], {
+    detached: true,
+    stdio: "ignore",
+    env: {
+      ...process.env,
+      PATH: "/opt/homebrew/opt/node@20/bin:" + process.env.PATH,
+    },
+  }).unref();
+
+  return {
+    success: true,
+    message: `Rendering started for "${book.title}". This may take a few minutes.`,
+    jobId,
+  };
+};
+
+export const checkRenderStatus = async (bookId: number) => {
+  "use server";
+
+  const supabase = getSupabaseAdminClient();
+
+  // Check book's page_images_count
+  const { data: book } = await supabase
+    .from("books")
+    .select("page_images_count, page_images_rendered_at")
+    .eq("id", bookId)
+    .single();
+
+  if (book?.page_images_count && book.page_images_count > 0) {
+    return {
+      completed: true,
+      pageCount: book.page_images_count,
+      renderedAt: book.page_images_rendered_at,
+    };
+  }
+
+  // Check latest render job status
+  const { data: job } = await supabase
+    .from("book_render_jobs")
+    .select("status, error_message, processed_pages, total_pages")
+    .eq("book_id", bookId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  return {
+    completed: false,
+    status: job?.status || "unknown",
+    error: job?.error_message,
+    processedPages: job?.processed_pages || 0,
+    totalPages: job?.total_pages || 0,
+  };
 };

@@ -1,8 +1,12 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { BookUploadForm } from '@/components/dashboard/BookUploadForm';
-import { BookManager, type ManagedBookRecord } from '@/components/dashboard/BookManager';
+import { useEffect, useState } from "react";
+import { BookUploadForm } from "@/components/dashboard/BookUploadForm";
+import { BookEditForm } from "@/components/dashboard/BookEditForm";
+import {
+  BookManager,
+  type ManagedBookRecord,
+} from "@/components/dashboard/BookManager";
 
 type BookManagementSectionProps = {
   books: ManagedBookRecord[];
@@ -10,21 +14,30 @@ type BookManagementSectionProps = {
   languageOptions: string[];
 };
 
-export const BookManagementSection = ({ books, genreOptions, languageOptions }: BookManagementSectionProps) => {
+export const BookManagementSection = ({
+  books,
+  genreOptions,
+  languageOptions,
+}: BookManagementSectionProps) => {
   const [showUploader, setShowUploader] = useState(false);
+  const [editingBook, setEditingBook] = useState<ManagedBookRecord | null>(
+    null,
+  );
   const closeUploader = () => setShowUploader(false);
+  const closeEditor = () => setEditingBook(null);
 
   useEffect(() => {
-    if (!showUploader) {
+    const isModalOpen = showUploader || editingBook !== null;
+    if (!isModalOpen) {
       return;
     }
 
     const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = previousOverflow;
     };
-  }, [showUploader]);
+  }, [showUploader, editingBook]);
 
   return (
     <div className="relative space-y-6">
@@ -33,6 +46,7 @@ export const BookManagementSection = ({ books, genreOptions, languageOptions }: 
         genreOptions={genreOptions}
         languageOptions={languageOptions}
         onAddBookClick={() => setShowUploader(true)}
+        onEditBookClick={(book) => setEditingBook(book)}
         isAddPanelOpen={showUploader}
       />
       {showUploader ? (
@@ -47,6 +61,23 @@ export const BookManagementSection = ({ books, genreOptions, languageOptions }: 
               languageOptions={languageOptions}
               onCancel={closeUploader}
               onSuccess={closeUploader}
+            />
+          </div>
+        </div>
+      ) : null}
+      {editingBook ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-indigo-950/40 px-4 py-8 backdrop-blur-sm">
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-[40px] border border-white/70 bg-gradient-to-br from-white via-pink-50 to-amber-50 p-1 shadow-[0_35px_120px_rgba(255,128,167,0.35)]"
+          >
+            <BookEditForm
+              book={editingBook}
+              genreOptions={genreOptions}
+              languageOptions={languageOptions}
+              onCancel={closeEditor}
+              onSuccess={closeEditor}
             />
           </div>
         </div>
