@@ -1,5 +1,6 @@
-import { cookies } from 'next/headers';
-import { createServerClient, type CookieOptions, type SupabaseClient } from '@supabase/ssr';
+import { cookies } from "next/headers";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -7,7 +8,7 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 export const createSupabaseServerClient = async () => {
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error(
-      'Supabase server env vars NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are required.'
+      "Supabase server env vars NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are required.",
     );
   }
 
@@ -22,7 +23,7 @@ export const createSupabaseServerClient = async () => {
         cookieStore.set({ name, value, ...options });
       },
       remove(name: string, options: CookieOptions) {
-        cookieStore.set({ name, value: '', ...options, maxAge: 0 });
+        cookieStore.set({ name, value: "", ...options, maxAge: 0 });
       },
     },
   });
