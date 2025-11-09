@@ -1,0 +1,69 @@
+# Dependencies
+**/node_modules
+**/npm-debug.log
+**/yarn-error.log
+**/.pnp
+**/.pnp.js
+
+# Testing
+**/coverage
+**/.nyc_output
+
+# Next.js
+**/.next/
+**/out/
+
+# Production
+**/build
+**/dist
+
+# Misc
+**/.DS_Store
+**/*.pem
+
+# Debug
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+
+# Local env files
+**/.env*.local
+**/.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Vercel
+**/.vercel
+
+# Typescript
+**/*.tsbuildinfo
+**/next-env.d.ts
+
+# Git
+.git
+.gitignore
+**/.git
+**/.gitignore
+
+# Documentation
+*.md
+!README.md
+
+# IDE
+.vscode
+.idea
+**/.vscode
+**/.idea
+
+# MacOS
+.DS_Store
+
+# Project specific
+AI-Readme.md
+Project-Roadmap.md
+MinIO/
+
+# Claude
+.claude/
