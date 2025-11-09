@@ -4,6 +4,8 @@ import {
 } from "@/components/dashboard/LibraryCollection";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+
 export default async function LibraryPage() {
   const supabase = await createSupabaseServerClient();
   const { data: books, error } = await supabase

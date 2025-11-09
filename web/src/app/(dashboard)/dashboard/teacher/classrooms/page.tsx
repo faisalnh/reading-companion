@@ -3,6 +3,8 @@ import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/roleCheck";
 import { ClassroomManager } from "@/components/dashboard/ClassroomManager";
 
+export const dynamic = "force-dynamic";
+
 export default async function ClassroomManagementPage() {
   const { user, role } = await requireRole(["TEACHER", "ADMIN"]);
 

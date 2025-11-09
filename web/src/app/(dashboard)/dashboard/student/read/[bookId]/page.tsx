@@ -3,6 +3,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { BookReader } from "@/components/dashboard/BookReader";
 import { buildPublicPrefixUrl } from "@/lib/minioUtils";
 
+export const dynamic = "force-dynamic";
+
 type PageProps = {
   params: { bookId: string };
 };

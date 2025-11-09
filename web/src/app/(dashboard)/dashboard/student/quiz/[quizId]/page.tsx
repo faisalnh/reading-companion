@@ -2,6 +2,8 @@ import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { QuizPlayer } from "@/components/dashboard/QuizPlayer";
 
+export const dynamic = "force-dynamic";
+
 type PageProps = {
   params: { quizId: string };
 };

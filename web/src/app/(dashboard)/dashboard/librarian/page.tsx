@@ -5,6 +5,8 @@ import type { AccessLevelValue } from "@/constants/accessLevels";
 import { QuizGenerator } from "@/components/dashboard/QuizGenerator";
 import { requireRole } from "@/lib/auth/roleCheck";
 
+export const dynamic = "force-dynamic";
+
 const CURRENT_YEAR = new Date().getFullYear();
 
 export default async function LibrarianPage() {

@@ -3,6 +3,8 @@ import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/roleCheck";
 import { ClassroomManager } from "@/components/dashboard/ClassroomManager";
 
+export const dynamic = "force-dynamic";
+
 const cardClass =
   "space-y-4 rounded-[28px] border border-white/60 bg-white/85 p-6 text-indigo-950 shadow-[0_20px_60px_rgba(147,118,255,0.18)] backdrop-blur-xl";
 
