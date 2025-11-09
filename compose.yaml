@@ -3,6 +3,8 @@ services:
     build:
       context: https://github.com/faisalnh/reading-companion.git#main
       dockerfile: Dockerfile
+      no_cache: true # Always build fresh, ignore cache
+      pull: true # Always pull latest base images
     container_name: reading-buddy
     image: reading-buddy:latest
     restart: unless-stopped
