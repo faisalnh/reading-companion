@@ -243,13 +243,25 @@ export const FlipBookReader = ({
           ref={bookRef}
           width={width}
           height={height}
+          size="stretch"
           minWidth={Math.round(baseWidth * 0.6)}
           maxWidth={Math.round(baseWidth * 2)}
           minHeight={Math.round(baseHeight * 0.6)}
           maxHeight={Math.round(baseHeight * 2)}
+          drawShadow={true}
+          flippingTime={1000}
+          usePortrait={false}
+          startZIndex={0}
+          autoSize={true}
+          maxShadowOpacity={0.5}
           showCover={false}
+          mobileScrollSupport={true}
+          clickEventForward={true}
+          useMouseEvents={true}
+          swipeDistance={30}
+          showPageCorners={true}
+          disableFlipByClick={false}
           startPage={0}
-          useMouseEvents
           onFlip={(event: { data: number }) => handleFlip(event.data)}
           className="mx-auto"
           style={{
