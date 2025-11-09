@@ -62,12 +62,17 @@ export default async function StudentDashboardPage() {
       {assignments?.length ? (
         <ul className="grid gap-5 md:grid-cols-2">
           {assignments.map((assignment) => {
-            const book = assignment.books as {
+            // Extract first book from array if it exists
+            const bookData =
+              Array.isArray(assignment.books) && assignment.books.length > 0
+                ? assignment.books[0]
+                : assignment.books;
+            const book = bookData as {
               id: number;
               title: string;
               author: string;
               cover_url: string;
-            };
+            } | null;
             return (
               <li
                 key={assignment.book_id}
