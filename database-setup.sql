@@ -408,6 +408,33 @@ CREATE POLICY "Admins view render jobs"
     (SELECT role FROM profiles WHERE id = auth.uid()) IN ('LIBRARIAN', 'ADMIN')
   );
 
+-- Student books (reading progress) policies
+CREATE POLICY "Students can view their own reading progress"
+  ON student_books
+  FOR SELECT
+  USING (student_id = auth.uid());
+
+CREATE POLICY "Students can insert their own reading progress"
+  ON student_books
+  FOR INSERT
+  WITH CHECK (student_id = auth.uid());
+
+CREATE POLICY "Students can update their own reading progress"
+  ON student_books
+  FOR UPDATE
+  USING (student_id = auth.uid());
+
+CREATE POLICY "Teachers can view their students' reading progress"
+  ON student_books
+  FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.role IN ('TEACHER', 'ADMIN')
+    )
+  );
+
 -- Quiz checkpoints policies
 CREATE POLICY "Librarians and admins can manage checkpoints"
   ON quiz_checkpoints
