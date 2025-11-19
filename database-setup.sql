@@ -290,8 +290,12 @@ CREATE INDEX idx_student_badges_book
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, role)
-  VALUES (NEW.id, 'STUDENT'); -- Default role
+  INSERT INTO public.profiles (id, role, full_name)
+  VALUES (
+    NEW.id,
+    'STUDENT', -- Default role
+    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name') -- Extract name from OAuth data
+  );
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
