@@ -31,6 +31,7 @@ CREATE TABLE profiles (
   role user_role NOT NULL DEFAULT 'STUDENT',
   full_name TEXT,
   grade INT,
+  access_level book_access_level, -- Nullable: only used for STUDENT role
   points INT NOT NULL DEFAULT 0,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
