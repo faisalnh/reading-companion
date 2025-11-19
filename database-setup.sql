@@ -435,6 +435,28 @@ CREATE POLICY "Teachers can view their students' reading progress"
     )
   );
 
+-- Quiz attempts policies
+CREATE POLICY "Students can view their own quiz attempts"
+  ON quiz_attempts
+  FOR SELECT
+  USING (student_id = auth.uid());
+
+CREATE POLICY "Students can insert their own quiz attempts"
+  ON quiz_attempts
+  FOR INSERT
+  WITH CHECK (student_id = auth.uid());
+
+CREATE POLICY "Teachers can view their students' quiz attempts"
+  ON quiz_attempts
+  FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.role IN ('TEACHER', 'ADMIN', 'LIBRARIAN')
+    )
+  );
+
 -- Quiz checkpoints policies
 CREATE POLICY "Librarians and admins can manage checkpoints"
   ON quiz_checkpoints
