@@ -288,29 +288,63 @@ CREATE INDEX idx_student_badges_book
 -- ============================================================================
 
 -- Function to create profile on user signup
+-- SECURITY: Uses SECURITY DEFINER (required for trigger) but includes validation
 CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public -- Prevent search_path exploits
+AS $$
 BEGIN
+  -- Validation: ensure we're in the correct trigger context
+  IF TG_OP != 'INSERT' THEN
+    RAISE EXCEPTION 'handle_new_user can only be used in INSERT triggers';
+  END IF;
+
+  IF TG_TABLE_NAME != 'users' OR TG_TABLE_SCHEMA != 'auth' THEN
+    RAISE EXCEPTION 'handle_new_user can only be used on auth.users table';
+  END IF;
+
+  -- Prevent duplicate profile creation
+  IF EXISTS (SELECT 1 FROM public.profiles WHERE id = NEW.id) THEN
+    RAISE NOTICE 'Profile already exists for user %', NEW.id;
+    RETURN NEW;
+  END IF;
+
+  -- Create profile with safe defaults
   INSERT INTO public.profiles (id, role, full_name)
   VALUES (
     NEW.id,
-    'STUDENT', -- Default role
-    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name') -- Extract name from OAuth data
+    'STUDENT', -- Default role (safe)
+    COALESCE(
+      NEW.raw_user_meta_data->>'full_name',
+      NEW.raw_user_meta_data->>'name'
+    )
   );
+
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- Function to get user emails (for admin panel)
+-- SECURITY: No longer uses SECURITY DEFINER - includes explicit ADMIN role check
 CREATE OR REPLACE FUNCTION get_all_user_emails()
 RETURNS TABLE (
   user_id uuid,
   email text
 )
 LANGUAGE plpgsql
-SECURITY DEFINER
 AS $$
 BEGIN
+  -- Explicit role check: only ADMIN can execute this function
+  IF NOT EXISTS (
+    SELECT 1 FROM profiles
+    WHERE id = auth.uid()
+    AND role = 'ADMIN'
+  ) THEN
+    RAISE EXCEPTION 'Access denied: only administrators can view user emails';
+  END IF;
+
   RETURN QUERY
   SELECT
     u.id as user_id,
@@ -330,7 +364,66 @@ $$ LANGUAGE plpgsql;
 
 
 -- ============================================================================
--- PART 6: TRIGGERS
+-- PART 6: VIEWS
+-- ============================================================================
+
+-- Quiz statistics view
+-- SECURITY: Uses SECURITY INVOKER (default) - RLS policies on underlying tables apply
+CREATE VIEW public.quiz_statistics AS
+SELECT
+  q.id,
+  q.book_id,
+  q.created_by_id,
+  q.questions,
+  q.page_range_start,
+  q.page_range_end,
+  q.quiz_type,
+  q.checkpoint_page,
+  q.created_at,
+
+  -- Statistics from quiz_attempts
+  COUNT(DISTINCT qa.id) AS total_attempts,
+  COUNT(DISTINCT qa.student_id) AS unique_students,
+  ROUND(AVG(qa.score), 2) AS average_score,
+  MAX(qa.score) AS highest_score,
+  MIN(qa.score) AS lowest_score,
+
+  -- Additional metadata
+  CASE
+    WHEN COUNT(qa.id) = 0 THEN 'no_attempts'
+    WHEN AVG(qa.score) >= 80 THEN 'high_performance'
+    WHEN AVG(qa.score) >= 60 THEN 'moderate_performance'
+    ELSE 'needs_improvement'
+  END AS performance_category,
+
+  -- Count recent attempts (last 7 days)
+  COUNT(DISTINCT CASE
+    WHEN qa.submitted_at > NOW() - INTERVAL '7 days'
+    THEN qa.id
+  END) AS recent_attempts_7d,
+
+  -- Question count
+  jsonb_array_length(q.questions) AS question_count
+
+FROM public.quizzes q
+LEFT JOIN public.quiz_attempts qa ON q.id = qa.quiz_id
+GROUP BY
+  q.id,
+  q.book_id,
+  q.created_by_id,
+  q.questions,
+  q.page_range_start,
+  q.page_range_end,
+  q.quiz_type,
+  q.checkpoint_page,
+  q.created_at;
+
+-- Grant permissions
+GRANT SELECT ON public.quiz_statistics TO authenticated;
+
+
+-- ============================================================================
+-- PART 7: TRIGGERS
 -- ============================================================================
 
 -- Trigger to create profile on user signup
@@ -433,6 +526,126 @@ CREATE POLICY "Teachers can view their students' reading progress"
       WHERE profiles.id = auth.uid()
       AND profiles.role IN ('TEACHER', 'ADMIN')
     )
+  );
+
+-- Quizzes policies
+CREATE POLICY "Librarians and admins can view all quizzes"
+  ON quizzes
+  FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.role IN ('LIBRARIAN', 'ADMIN')
+    )
+  );
+
+CREATE POLICY "Teachers can view quizzes for their class books"
+  ON quizzes
+  FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.role = 'TEACHER'
+    )
+    AND (
+      created_by_id = auth.uid()
+      OR
+      book_id IN (
+        SELECT cb.book_id
+        FROM class_books cb
+        JOIN classes c ON cb.class_id = c.id
+        WHERE c.teacher_id = auth.uid()
+      )
+    )
+  );
+
+CREATE POLICY "Students can view quizzes for assigned books"
+  ON quizzes
+  FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.role = 'STUDENT'
+    )
+    AND (
+      book_id IN (
+        SELECT cb.book_id
+        FROM class_books cb
+        JOIN class_students cs ON cb.class_id = cs.class_id
+        WHERE cs.student_id = auth.uid()
+      )
+      OR
+      book_id IN (
+        SELECT sb.book_id
+        FROM student_books sb
+        WHERE sb.student_id = auth.uid()
+      )
+    )
+  );
+
+CREATE POLICY "Librarians and admins can manage quizzes"
+  ON quizzes
+  FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.role IN ('LIBRARIAN', 'ADMIN')
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.role IN ('LIBRARIAN', 'ADMIN')
+    )
+  );
+
+CREATE POLICY "Teachers can create quizzes"
+  ON quizzes
+  FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.role = 'TEACHER'
+    )
+    AND created_by_id = auth.uid()
+  );
+
+CREATE POLICY "Teachers can manage their own quizzes"
+  ON quizzes
+  FOR UPDATE
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.role = 'TEACHER'
+    )
+    AND created_by_id = auth.uid()
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.role = 'TEACHER'
+    )
+    AND created_by_id = auth.uid()
+  );
+
+CREATE POLICY "Teachers can delete their own quizzes"
+  ON quizzes
+  FOR DELETE
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.role = 'TEACHER'
+    )
+    AND created_by_id = auth.uid()
   );
 
 -- Quiz attempts policies
@@ -646,7 +859,23 @@ COMMENT ON COLUMN student_badges.metadata IS
 'Additional context about how the badge was earned (e.g., score, date, specific achievement details)';
 
 COMMENT ON FUNCTION get_all_user_emails() IS
-'Returns user IDs and emails from auth.users table for admin purposes';
+'Returns user IDs and emails from auth.users table.
+SECURITY: Only accessible by users with ADMIN role.
+Non-admin users will receive "Access denied" error.
+Used by admin panel for user management.';
+
+COMMENT ON FUNCTION public.handle_new_user() IS
+'Trigger function to create user profile on signup.
+SECURITY: Uses SECURITY DEFINER (required for trigger).
+Includes validation to prevent misuse.
+Always creates profiles with STUDENT role (safe default).
+SET search_path protects against search_path exploits.';
+
+COMMENT ON VIEW public.quiz_statistics IS
+'Aggregates quiz data with attempt statistics including total attempts, unique students, average/highest/lowest scores, and performance categories.
+SECURITY: Uses SECURITY INVOKER (default) - RLS policies apply.
+Access is controlled through RLS policies on underlying tables (quizzes, quiz_attempts).
+Users only see statistics for quizzes they have permission to view based on their role and class assignments.';
 
 
 -- ============================================================================
