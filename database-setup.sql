@@ -402,8 +402,15 @@ SELECT
     THEN qa.id
   END) AS recent_attempts_7d,
 
-  -- Question count
-  jsonb_array_length(q.questions) AS question_count
+  -- Question count - handle both formats:
+  -- Format 1 (nested): {"title": "...", "questions": [...]}
+  -- Format 2 (direct array): [...]
+  CASE
+    WHEN jsonb_typeof(q.questions) = 'array' THEN jsonb_array_length(q.questions)
+    WHEN jsonb_typeof(q.questions) = 'object' AND q.questions ? 'questions' THEN
+      jsonb_array_length(q.questions->'questions')
+    ELSE 0
+  END AS question_count
 
 FROM public.quizzes q
 LEFT JOIN public.quiz_attempts qa ON q.id = qa.quiz_id
@@ -875,7 +882,8 @@ COMMENT ON VIEW public.quiz_statistics IS
 'Aggregates quiz data with attempt statistics including total attempts, unique students, average/highest/lowest scores, and performance categories.
 SECURITY: Uses SECURITY INVOKER (default) - RLS policies apply.
 Access is controlled through RLS policies on underlying tables (quizzes, quiz_attempts).
-Users only see statistics for quizzes they have permission to view based on their role and class assignments.';
+Users only see statistics for quizzes they have permission to view based on their role and class assignments.
+Supports both quiz question formats: direct array or nested object with title.';
 
 
 -- ============================================================================
