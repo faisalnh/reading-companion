@@ -55,6 +55,10 @@ CREATE TABLE books (
   page_images_prefix TEXT,
   page_images_count INT,
   page_images_rendered_at TIMESTAMPTZ,
+  -- Multi-format support columns
+  file_format VARCHAR(20) DEFAULT 'pdf',
+  original_file_url TEXT,
+  file_size_bytes BIGINT,
   -- Text extraction columns
   page_text_content JSONB,
   text_extracted_at TIMESTAMP WITH TIME ZONE,
@@ -232,6 +236,9 @@ CREATE TABLE student_badges (
 CREATE INDEX idx_books_text_extracted
   ON books(text_extracted_at)
   WHERE text_extracted_at IS NOT NULL;
+
+CREATE INDEX idx_books_file_format
+  ON books(file_format);
 
 -- Quizzes indexes
 CREATE INDEX idx_quizzes_type
@@ -824,13 +831,22 @@ ON CONFLICT (name) DO NOTHING;
 -- ============================================================================
 
 COMMENT ON COLUMN books.page_text_content IS
-'Extracted text content from PDF in format:
+'Extracted text content from e-book in format:
 {
   "pages": [{"pageNumber": 1, "text": "...", "wordCount": 245}],
   "totalPages": 150,
   "totalWords": 45000,
-  "extractionMethod": "pdf-text"
+  "extractionMethod": "pdf-text" | "epub-html"
 }';
+
+COMMENT ON COLUMN books.file_format IS
+'Original file format: pdf, epub (more formats may be added in future)';
+
+COMMENT ON COLUMN books.original_file_url IS
+'URL to original uploaded file before conversion (e.g., original EPUB or PDF file in MinIO)';
+
+COMMENT ON COLUMN books.file_size_bytes IS
+'Size of the original uploaded file in bytes';
 
 COMMENT ON COLUMN quizzes.quiz_type IS
 'Type of quiz: "checkpoint" for in-reading quizzes that block progress, "classroom" for badge-based assessment quizzes';
