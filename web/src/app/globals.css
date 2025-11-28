@@ -19,6 +19,23 @@
     --success: #10b981; /* Green */
     --warning: #f59e0b; /* Amber */
     --error: #ef4444; /* Red */
+
+    /* shadcn/ui theme variables */
+    --card-foreground: #1e1b4b;
+    --popover: #ffffff;
+    --popover-foreground: #1e1b4b;
+    --primary: #7c3aed;
+    --primary-foreground: #ffffff;
+    --secondary: #f5f3ff;
+    --secondary-foreground: #1e1b4b;
+    --muted: #f5f3ff;
+    --muted-foreground: #64748b;
+    --accent-foreground: #1e1b4b;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+    --border: #e9d5ff;
+    --input: #e9d5ff;
+    --ring: #7c3aed;
 }
 
 @theme inline {
@@ -28,6 +45,9 @@
         "Nunito", "Baloo 2", "Comic Neue", var(--font-geist-sans), system-ui,
         -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --font-mono: var(--font-geist-mono);
+
+    /* shadcn/ui design tokens */
+    --radius: 0.5rem;
 }
 
 body {
