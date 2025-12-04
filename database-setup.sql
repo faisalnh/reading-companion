@@ -63,6 +63,10 @@ CREATE TABLE books (
   page_text_content JSONB,
   text_extracted_at TIMESTAMP WITH TIME ZONE,
   text_extraction_method VARCHAR(50),
+  -- Text extraction error tracking
+  text_extraction_error TEXT,
+  text_extraction_attempts INTEGER DEFAULT 0,
+  last_extraction_attempt_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -236,6 +240,10 @@ CREATE TABLE student_badges (
 CREATE INDEX idx_books_text_extracted
   ON books(text_extracted_at)
   WHERE text_extracted_at IS NOT NULL;
+
+CREATE INDEX idx_books_extraction_failed
+  ON books(text_extraction_error)
+  WHERE text_extraction_error IS NOT NULL;
 
 CREATE INDEX idx_books_file_format
   ON books(file_format);
@@ -847,6 +855,15 @@ COMMENT ON COLUMN books.original_file_url IS
 
 COMMENT ON COLUMN books.file_size_bytes IS
 'Size of the original uploaded file in bytes';
+
+COMMENT ON COLUMN books.text_extraction_error IS
+'Last error message if text extraction failed. NULL if extraction succeeded or has not been attempted.';
+
+COMMENT ON COLUMN books.text_extraction_attempts IS
+'Number of times text extraction has been attempted for this book. Useful for monitoring and debugging.';
+
+COMMENT ON COLUMN books.last_extraction_attempt_at IS
+'Timestamp of the most recent extraction attempt (successful or failed). Used to track retry history.';
 
 COMMENT ON COLUMN quizzes.quiz_type IS
 'Type of quiz: "checkpoint" for in-reading quizzes that block progress, "classroom" for badge-based assessment quizzes';
