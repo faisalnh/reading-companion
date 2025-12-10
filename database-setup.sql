@@ -257,6 +257,18 @@ CREATE TABLE login_broadcasts (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Weekly challenge completions
+CREATE TABLE weekly_challenge_completions (
+  id SERIAL PRIMARY KEY,
+  student_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  challenge_id VARCHAR(50) NOT NULL,
+  week_number INT NOT NULL,
+  year INT NOT NULL,
+  completed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  xp_awarded INT NOT NULL,
+  UNIQUE(student_id, challenge_id, week_number, year)
+);
+
 
 -- ============================================================================
 -- PART 4: INDEXES FOR PERFORMANCE
@@ -327,6 +339,10 @@ CREATE INDEX idx_student_badges_book
 CREATE INDEX idx_profiles_xp ON profiles(xp DESC);
 CREATE INDEX idx_profiles_level ON profiles(level DESC);
 CREATE INDEX idx_profiles_reading_streak ON profiles(reading_streak DESC);
+
+-- Weekly challenge indexes
+CREATE INDEX idx_weekly_challenge_completions_student ON weekly_challenge_completions(student_id);
+CREATE INDEX idx_weekly_challenge_completions_week ON weekly_challenge_completions(week_number, year);
 
 
 -- ============================================================================
@@ -525,6 +541,7 @@ ALTER TABLE student_checkpoint_progress ENABLE ROW LEVEL SECURITY;
 ALTER TABLE badges ENABLE ROW LEVEL SECURITY;
 ALTER TABLE student_badges ENABLE ROW LEVEL SECURITY;
 ALTER TABLE login_broadcasts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE weekly_challenge_completions ENABLE ROW LEVEL SECURITY;
 
 -- Profiles policies
 CREATE POLICY "Public profiles are viewable by everyone."
@@ -810,6 +827,23 @@ CREATE POLICY "Teachers and admins can view all student badges"
       SELECT 1 FROM profiles
       WHERE profiles.id = auth.uid()
       AND profiles.role IN ('TEACHER', 'ADMIN')
+    )
+  );
+
+-- Weekly challenge completions policies
+CREATE POLICY "Students can view their own challenge completions"
+  ON weekly_challenge_completions
+  FOR SELECT
+  USING (student_id = auth.uid());
+
+CREATE POLICY "Teachers and admins can view all challenge completions"
+  ON weekly_challenge_completions
+  FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.role IN ('TEACHER', 'ADMIN', 'LIBRARIAN')
     )
   );
 
