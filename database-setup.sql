@@ -231,6 +231,19 @@ CREATE TABLE student_badges (
   CONSTRAINT unique_student_badge_book UNIQUE(student_id, badge_id, book_id)
 );
 
+-- Login broadcasts (messages displayed on login screen)
+CREATE TABLE login_broadcasts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title TEXT NOT NULL,
+  body TEXT NOT NULL,
+  tone TEXT NOT NULL DEFAULT 'info',
+  link_label TEXT,
+  link_url TEXT,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  created_by UUID REFERENCES auth.users (id),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 
 -- ============================================================================
 -- PART 4: INDEXES FOR PERFORMANCE
@@ -487,6 +500,7 @@ ALTER TABLE quiz_checkpoints ENABLE ROW LEVEL SECURITY;
 ALTER TABLE student_checkpoint_progress ENABLE ROW LEVEL SECURITY;
 ALTER TABLE badges ENABLE ROW LEVEL SECURITY;
 ALTER TABLE student_badges ENABLE ROW LEVEL SECURITY;
+ALTER TABLE login_broadcasts ENABLE ROW LEVEL SECURITY;
 
 -- Profiles policies
 CREATE POLICY "Public profiles are viewable by everyone."
@@ -898,6 +912,12 @@ COMMENT ON TABLE student_badges IS
 COMMENT ON COLUMN student_badges.metadata IS
 'Additional context about how the badge was earned (e.g., score, date, specific achievement details)';
 
+COMMENT ON TABLE login_broadcasts IS
+'Short broadcast messages shown on the login page; maintained by admins.';
+
+COMMENT ON COLUMN login_broadcasts.tone IS
+'Display tone for styling. Expected values: info, success, warning, alert.';
+
 COMMENT ON FUNCTION get_all_user_emails() IS
 'Returns user IDs and emails from auth.users table.
 SECURITY: Only accessible by users with ADMIN role.
@@ -931,7 +951,7 @@ BEGIN
   RAISE NOTICE '=================================================';
   RAISE NOTICE 'Created:';
   RAISE NOTICE '  - 2 ENUMs (user_role, book_access_level)';
-  RAISE NOTICE '  - 18 Tables (with all v1.0.0 features)';
+  RAISE NOTICE '  - 19 Tables (v1.0.0 features plus login broadcasts)';
   RAISE NOTICE '  - 15+ Indexes for performance';
   RAISE NOTICE '  - 3 Functions (user creation, email lookup, timestamp updates)';
   RAISE NOTICE '  - 3 Triggers';
