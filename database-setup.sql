@@ -33,6 +33,18 @@ CREATE TABLE profiles (
   grade INT,
   access_level book_access_level, -- Nullable: only used for STUDENT role
   points INT NOT NULL DEFAULT 0,
+  -- Gamification fields
+  xp INT NOT NULL DEFAULT 0,
+  level INT NOT NULL DEFAULT 1,
+  reading_streak INT NOT NULL DEFAULT 0,
+  longest_streak INT NOT NULL DEFAULT 0,
+  last_read_date DATE,
+  total_books_completed INT NOT NULL DEFAULT 0,
+  total_pages_read INT NOT NULL DEFAULT 0,
+  total_quizzes_completed INT NOT NULL DEFAULT 0,
+  total_perfect_quizzes INT NOT NULL DEFAULT 0,
+  books_completed INT NOT NULL DEFAULT 0,
+  pages_read INT NOT NULL DEFAULT 0,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -126,6 +138,7 @@ CREATE TABLE student_books (
   completed BOOLEAN NOT NULL DEFAULT FALSE,
   started_at TIMESTAMPTZ DEFAULT NOW(),
   completed_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(student_id, book_id)
 );
 
@@ -310,6 +323,11 @@ CREATE INDEX idx_student_badges_book
   ON student_badges(book_id)
   WHERE book_id IS NOT NULL;
 
+-- Gamification indexes for leaderboard performance
+CREATE INDEX idx_profiles_xp ON profiles(xp DESC);
+CREATE INDEX idx_profiles_level ON profiles(level DESC);
+CREATE INDEX idx_profiles_reading_streak ON profiles(reading_streak DESC);
+
 
 -- ============================================================================
 -- PART 5: FUNCTIONS
@@ -475,6 +493,12 @@ CREATE TRIGGER update_student_checkpoint_progress_updated_at
 -- Trigger to update badges updated_at
 CREATE TRIGGER update_badges_updated_at
   BEFORE UPDATE ON badges
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+-- Trigger to update student_books updated_at
+CREATE TRIGGER update_student_books_updated_at
+  BEFORE UPDATE ON student_books
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
