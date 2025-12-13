@@ -33,6 +33,18 @@ CREATE TABLE profiles (
   grade INT,
   access_level book_access_level, -- Nullable: only used for STUDENT role
   points INT NOT NULL DEFAULT 0,
+  -- Gamification fields
+  xp INT NOT NULL DEFAULT 0,
+  level INT NOT NULL DEFAULT 1,
+  reading_streak INT NOT NULL DEFAULT 0,
+  longest_streak INT NOT NULL DEFAULT 0,
+  last_read_date DATE,
+  total_books_completed INT NOT NULL DEFAULT 0,
+  total_pages_read INT NOT NULL DEFAULT 0,
+  total_quizzes_completed INT NOT NULL DEFAULT 0,
+  total_perfect_quizzes INT NOT NULL DEFAULT 0,
+  books_completed INT NOT NULL DEFAULT 0,
+  pages_read INT NOT NULL DEFAULT 0,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -126,6 +138,7 @@ CREATE TABLE student_books (
   completed BOOLEAN NOT NULL DEFAULT FALSE,
   started_at TIMESTAMPTZ DEFAULT NOW(),
   completed_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(student_id, book_id)
 );
 
@@ -231,6 +244,31 @@ CREATE TABLE student_badges (
   CONSTRAINT unique_student_badge_book UNIQUE(student_id, badge_id, book_id)
 );
 
+-- Login broadcasts (messages displayed on login screen)
+CREATE TABLE login_broadcasts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title TEXT NOT NULL,
+  body TEXT NOT NULL,
+  tone TEXT NOT NULL DEFAULT 'info',
+  link_label TEXT,
+  link_url TEXT,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  created_by UUID REFERENCES auth.users (id),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Weekly challenge completions
+CREATE TABLE weekly_challenge_completions (
+  id SERIAL PRIMARY KEY,
+  student_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  challenge_id VARCHAR(50) NOT NULL,
+  week_number INT NOT NULL,
+  year INT NOT NULL,
+  completed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  xp_awarded INT NOT NULL,
+  UNIQUE(student_id, challenge_id, week_number, year)
+);
+
 
 -- ============================================================================
 -- PART 4: INDEXES FOR PERFORMANCE
@@ -296,6 +334,15 @@ CREATE INDEX idx_student_badges_badge
 CREATE INDEX idx_student_badges_book
   ON student_badges(book_id)
   WHERE book_id IS NOT NULL;
+
+-- Gamification indexes for leaderboard performance
+CREATE INDEX idx_profiles_xp ON profiles(xp DESC);
+CREATE INDEX idx_profiles_level ON profiles(level DESC);
+CREATE INDEX idx_profiles_reading_streak ON profiles(reading_streak DESC);
+
+-- Weekly challenge indexes
+CREATE INDEX idx_weekly_challenge_completions_student ON weekly_challenge_completions(student_id);
+CREATE INDEX idx_weekly_challenge_completions_week ON weekly_challenge_completions(week_number, year);
 
 
 -- ============================================================================
@@ -465,6 +512,12 @@ CREATE TRIGGER update_badges_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+-- Trigger to update student_books updated_at
+CREATE TRIGGER update_student_books_updated_at
+  BEFORE UPDATE ON student_books
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
 
 -- ============================================================================
 -- PART 7: ROW LEVEL SECURITY (RLS)
@@ -487,6 +540,8 @@ ALTER TABLE quiz_checkpoints ENABLE ROW LEVEL SECURITY;
 ALTER TABLE student_checkpoint_progress ENABLE ROW LEVEL SECURITY;
 ALTER TABLE badges ENABLE ROW LEVEL SECURITY;
 ALTER TABLE student_badges ENABLE ROW LEVEL SECURITY;
+ALTER TABLE login_broadcasts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE weekly_challenge_completions ENABLE ROW LEVEL SECURITY;
 
 -- Profiles policies
 CREATE POLICY "Public profiles are viewable by everyone."
@@ -775,6 +830,23 @@ CREATE POLICY "Teachers and admins can view all student badges"
     )
   );
 
+-- Weekly challenge completions policies
+CREATE POLICY "Students can view their own challenge completions"
+  ON weekly_challenge_completions
+  FOR SELECT
+  USING (student_id = auth.uid());
+
+CREATE POLICY "Teachers and admins can view all challenge completions"
+  ON weekly_challenge_completions
+  FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.role IN ('TEACHER', 'ADMIN', 'LIBRARIAN')
+    )
+  );
+
 
 -- ============================================================================
 -- PART 8: GRANT PERMISSIONS
@@ -898,6 +970,12 @@ COMMENT ON TABLE student_badges IS
 COMMENT ON COLUMN student_badges.metadata IS
 'Additional context about how the badge was earned (e.g., score, date, specific achievement details)';
 
+COMMENT ON TABLE login_broadcasts IS
+'Short broadcast messages shown on the login page; maintained by admins.';
+
+COMMENT ON COLUMN login_broadcasts.tone IS
+'Display tone for styling. Expected values: info, success, warning, alert.';
+
 COMMENT ON FUNCTION get_all_user_emails() IS
 'Returns user IDs and emails from auth.users table.
 SECURITY: Only accessible by users with ADMIN role.
@@ -931,7 +1009,7 @@ BEGIN
   RAISE NOTICE '=================================================';
   RAISE NOTICE 'Created:';
   RAISE NOTICE '  - 2 ENUMs (user_role, book_access_level)';
-  RAISE NOTICE '  - 18 Tables (with all v1.0.0 features)';
+  RAISE NOTICE '  - 19 Tables (v1.0.0 features plus login broadcasts)';
   RAISE NOTICE '  - 15+ Indexes for performance';
   RAISE NOTICE '  - 3 Functions (user creation, email lookup, timestamp updates)';
   RAISE NOTICE '  - 3 Triggers';
