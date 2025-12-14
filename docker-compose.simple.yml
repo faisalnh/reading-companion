@@ -1,0 +1,150 @@
+version: '3.8'
+
+# Simplified Self-hosted Reading Buddy Stack (3 Containers)
+# Optimized for simplicity while maintaining production reliability
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: reading-buddy-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: reading_buddy
+      POSTGRES_USER: reading_buddy_app
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --lc-collate=C --lc-ctype=C"
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database-setup-selfhosted.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./postgres-backups:/backups
+    ports:
+      - "5432:5432"
+    networks:
+      - reading-buddy-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U reading_buddy_app -d reading_buddy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command:
+      - "postgres"
+      - "-c"
+      - "max_connections=100"
+      - "-c"
+      - "shared_buffers=256MB"
+      - "-c"
+      - "effective_cache_size=1GB"
+      - "-c"
+      - "maintenance_work_mem=64MB"
+      - "-c"
+      - "checkpoint_completion_target=0.9"
+      - "-c"
+      - "wal_buffers=16MB"
+      - "-c"
+      - "random_page_cost=1.1"
+      - "-c"
+      - "effective_io_concurrency=200"
+      - "-c"
+      - "work_mem=16MB"
+      - "-c"
+      - "min_wal_size=1GB"
+      - "-c"
+      - "max_wal_size=4GB"
+
+  # Redis for Session Management and Rate Limiting
+  redis:
+    image: redis:7-alpine
+    container_name: reading-buddy-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - reading-buddy-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Next.js Web Application
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: production
+    container_name: reading-buddy-web
+    restart: unless-stopped
+    environment:
+      # Node
+      NODE_ENV: production
+      PORT: 3000
+
+      # NextAuth
+      NEXTAUTH_URL: ${NEXTAUTH_URL}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+
+      # Database (direct connection, no PgBouncer)
+      DATABASE_URL: postgresql://reading_buddy_app:${POSTGRES_PASSWORD}@postgres:5432/reading_buddy?pool_timeout=0&connection_limit=20
+
+      # Redis
+      REDIS_URL: redis://redis:6379
+
+      # Google OAuth
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+
+      # MinIO Storage
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT}
+      MINIO_PORT: ${MINIO_PORT:-443}
+      MINIO_USE_SSL: ${MINIO_USE_SSL:-true}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME:-reading-buddy}
+
+      # AI Configuration
+      AI_PROVIDER: ${AI_PROVIDER:-local}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      RAG_API_URL: ${RAG_API_URL}
+      DIFFUSER_API_URL: ${DIFFUSER_API_URL}
+      NEXT_PUBLIC_RAG_API_URL: ${NEXT_PUBLIC_RAG_API_URL}
+
+      # Email (SMTP)
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_FROM: ${SMTP_FROM}
+
+      # Application
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+    ports:
+      - "3000:3000"
+    networks:
+      - reading-buddy-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  reading-buddy-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
