@@ -791,39 +791,98 @@ Once stable, consider:
 
 ---
 
+## Deployment Environment
+
+**CONFIRMED: Proxmox Server with Docker and Komodo**
+
+### Infrastructure Details
+
+**Hosting:**
+- Proxmox server (on-premise)
+- Docker containerization
+- Stack management via Komodo
+- Existing MinIO installation
+
+### Deployment Files Created
+
+The following files have been created for your Proxmox/Komodo deployment:
+
+1. **`docker-compose.selfhosted.yml`** - Complete Docker stack including:
+   - PostgreSQL 15 with optimized configuration
+   - PgBouncer connection pooler
+   - Redis for caching and rate limiting
+   - Web application
+   - Automated daily backups
+   - Optional pgAdmin (via `--profile tools`)
+
+2. **`.env.selfhosted.example`** - Environment variables template with all required configuration
+
+3. **`scripts/backup.sh`** - Automated daily backup script with:
+   - Compressed backups (gzip)
+   - Integrity verification
+   - Automatic retention cleanup
+   - Detailed logging
+
+4. **`scripts/restore.sh`** - Database restore script with:
+   - Backup verification
+   - Safety checks
+   - Database recreation
+   - Restore verification
+
+5. **`KOMODO_DEPLOYMENT.md`** - Complete deployment guide covering:
+   - Komodo stack setup
+   - Environment configuration
+   - Reverse proxy setup (Nginx/Traefik)
+   - Google OAuth configuration
+   - Monitoring and maintenance
+   - Troubleshooting
+
+### Quick Start for Proxmox/Komodo
+
+1. **Review deployment guide:** See `KOMODO_DEPLOYMENT.md`
+2. **Configure environment:** Copy `.env.selfhosted.example` to `.env` and fill values
+3. **Deploy in Komodo:** Import `docker-compose.selfhosted.yml` as new stack
+4. **Set up reverse proxy:** Configure SSL and domain routing
+5. **Verify deployment:** Test health checks and service connectivity
+
 ## Questions & Clarifications Needed
 
-Before proceeding, please clarify:
+Before proceeding with implementation, please clarify:
 
-1. **Hosting Environment:**
-   - Where will PostgreSQL be hosted? (VPS, cloud VM, managed service?)
-   - Do you have infrastructure for Docker/containers?
-   - What's the expected scale (concurrent users, database size)?
-
-2. **Timeline:**
+1. **Timeline:**
    - What's your target completion date?
    - Can you accept downtime for migration? (How much?)
-   - Do you need zero-downtime migration?
+   - Recommended: 2-4 hour maintenance window for data migration
 
-3. **Email:**
+2. **Email:**
    - Preference for email provider?
-   - Budget for email service?
+     - Self-hosted SMTP (requires email server setup)
+     - Gmail SMTP (free, limited to 500/day)
+     - Resend (recommended, 3000/month free, then $20/month)
+     - SendGrid (100/day free, then paid)
    - Current email sending volume?
 
-4. **Authentication:**
+3. **Authentication:**
    - Keep Google OAuth restricted to @millennia21.id?
    - Need other OAuth providers (Microsoft, etc.)?
    - Require 2FA/MFA?
 
-5. **Database:**
+4. **Database:**
    - Preference for ORM vs raw SQL?
-   - Need point-in-time recovery for database?
+     - **Recommended: Drizzle ORM** (type-safe, lightweight, good migration from Supabase)
    - Expected data growth rate?
+   - VM resources for PostgreSQL (RAM/CPU)?
 
-6. **Migration:**
+5. **Migration:**
    - Need to preserve exact user IDs?
-   - Force all users to reset passwords, or migrate password hashes?
+   - Force all users to reset passwords (simpler), or attempt password hash migration (complex)?
+     - **Recommended: Force password reset** - Supabase uses different hashing, migration is complex
    - Keep audit trail of migration process?
+
+6. **Domain & SSL:**
+   - What domain will you use?
+   - Do you have SSL certificates, or should we use Let's Encrypt?
+   - Using Nginx Proxy Manager, Traefik, or other reverse proxy?
 
 ---
 
