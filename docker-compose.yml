@@ -1,4 +1,27 @@
 services:
+  # PostgreSQL Database (Local Option)
+  postgres:
+    image: postgres:16-alpine
+    container_name: reading-buddy-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-reading_buddy}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database-setup.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    networks:
+      - reading-buddy-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-reading_buddy}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   reading-buddy:
     build:
       # Build directly from GitHub repository - always pulls latest code from main branch
@@ -34,10 +57,19 @@ services:
       - HOSTNAME=0.0.0.0
       # Application URL
       - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
-      # Supabase Configuration
+      # Database Provider Selection (supabase or postgres)
+      - DB_PROVIDER=${DB_PROVIDER:-supabase}
+      # Supabase Configuration (for DB_PROVIDER=supabase)
       - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
       - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      # PostgreSQL Configuration (for DB_PROVIDER=postgres)
+      - POSTGRES_HOST=${POSTGRES_HOST:-postgres}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - POSTGRES_DB=${POSTGRES_DB:-reading_buddy}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-changeme}
+      - POSTGRES_SSL=${POSTGRES_SSL:-false}
       # MinIO Configuration
       - MINIO_ENDPOINT=${MINIO_ENDPOINT}
       - MINIO_PORT=${MINIO_PORT}
@@ -53,6 +85,10 @@ services:
       - RAG_API_URL=${RAG_API_URL:-http://172.16.0.65:8000}
       - DIFFUSER_API_URL=${DIFFUSER_API_URL:-http://172.16.0.165:8000}
       - NEXT_PUBLIC_RAG_API_URL=${NEXT_PUBLIC_RAG_API_URL:-http://172.16.0.65:8000}
+
+    depends_on:
+      postgres:
+        condition: service_healthy
 
     healthcheck:
       test:
@@ -73,3 +109,6 @@ services:
 networks:
   reading-buddy-network:
     driver: bridge
+
+volumes:
+  postgres_data:
