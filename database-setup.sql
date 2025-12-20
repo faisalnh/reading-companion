@@ -9,9 +9,11 @@
 -- ============================================================================
 
 -- User roles
+DROP TYPE IF EXISTS user_role CASCADE;
 CREATE TYPE user_role AS ENUM ('STUDENT', 'TEACHER', 'LIBRARIAN', 'ADMIN');
 
 -- Book access levels
+DROP TYPE IF EXISTS book_access_level CASCADE;
 CREATE TYPE book_access_level AS ENUM (
   'KINDERGARTEN',
   'LOWER_ELEMENTARY',
