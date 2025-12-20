@@ -7,6 +7,7 @@ import {
   useEffect,
   useRef,
   type ChangeEvent,
+  type CSSProperties,
 } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
@@ -608,11 +609,8 @@ export const BookManager = ({
                           Access Levels:
                         </p>
                         <div className="flex flex-wrap gap-2">
-                          {book.accessLevels.map((level: any) => {
-                            const badge =
-                              ACCESS_BADGES[
-                                level as keyof typeof ACCESS_BADGES
-                              ];
+                          {book.accessLevels.map((level: AccessLevelValue) => {
+                            const badge = ACCESS_BADGES[level];
                             return (
                               <span
                                 key={`${book.id}-${level}`}

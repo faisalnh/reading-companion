@@ -94,7 +94,7 @@ export async function extractTextFromPDF(
 
       // Concatenate text items
       const pageText = textContent.items
-        .map((item: any) => ("str" in item ? item.str : ""))
+        .map((item: { str?: string }) => ("str" in item ? item.str : ""))
         .join(" ")
         .trim();
 
