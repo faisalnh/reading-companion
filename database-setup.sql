@@ -81,6 +81,9 @@ CREATE TABLE books (
   text_extraction_error TEXT,
   text_extraction_attempts INTEGER DEFAULT 0,
   last_extraction_attempt_at TIMESTAMP WITH TIME ZONE,
+  -- Text-based reader columns
+  text_json_url TEXT,
+  text_extraction_status VARCHAR(20) DEFAULT 'pending',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
