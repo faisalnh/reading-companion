@@ -265,11 +265,44 @@ CREATE TABLE student_badges (
 CREATE TABLE xp_transactions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   student_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  amount INTEGER NOT NULL,
-  source VARCHAR(50) NOT NULL,
-  source_id TEXT,
+  xp_amount INTEGER NOT NULL,
+  source_type VARCHAR(50) NOT NULL, -- 'quiz', 'book', 'challenge', 'manual'
+  source_id TEXT, -- Generic reference ID
   description TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Journal Entries for student reflection
+CREATE TABLE journal_entries (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  student_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  entry_type VARCHAR(50) NOT NULL, -- 'note', 'reading_session', 'achievement', 'quote', 'question', 'started_book', 'finished_book'
+  content TEXT,
+  book_id INTEGER REFERENCES books(id) ON DELETE SET NULL,
+  page_number INTEGER,
+  page_range_start INTEGER,
+  page_range_end INTEGER,
+  reading_duration_minutes INTEGER,
+  metadata JSONB DEFAULT '{}',
+  is_private BOOLEAN DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Book specific journal data (reviews, ratings)
+CREATE TABLE book_journals (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  student_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  book_id INTEGER NOT NULL REFERENCES books(id) ON DELETE CASCADE,
+  personal_rating INTEGER, -- 1-5 stars
+  review_text TEXT,
+  favorite_quote TEXT,
+  favorite_quote_page INTEGER,
+  reading_goal_pages INTEGER,
+  notes_count INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(student_id, book_id)
 );
 
 -- Reading challenges
