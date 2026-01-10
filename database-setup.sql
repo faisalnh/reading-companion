@@ -47,7 +47,8 @@ CREATE TABLE profiles (
   total_perfect_quizzes INT NOT NULL DEFAULT 0,
   books_completed INT NOT NULL DEFAULT 0,
   pages_read INT NOT NULL DEFAULT 0,
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Books table
@@ -151,14 +152,19 @@ CREATE TABLE student_books (
 CREATE TABLE quizzes (
   id SERIAL PRIMARY KEY,
   book_id INT NOT NULL REFERENCES books(id) ON DELETE CASCADE,
-  created_by_id UUID REFERENCES profiles(id),
+  title TEXT,
+  description TEXT,
   questions JSONB NOT NULL,
-  -- Quiz type and page range columns
+  status VARCHAR(20) DEFAULT 'published',
+  is_published BOOLEAN DEFAULT true,
+  tags TEXT[],
   page_range_start INTEGER,
   page_range_end INTEGER,
   quiz_type VARCHAR(50) DEFAULT 'classroom',
   checkpoint_page INTEGER,
+  created_by_id UUID REFERENCES profiles(id),
   created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
   CONSTRAINT quizzes_quiz_type_check CHECK (quiz_type IN ('checkpoint', 'classroom'))
 );
 
@@ -230,11 +236,17 @@ CREATE TABLE badges (
   icon_url TEXT,
   badge_type VARCHAR(50) NOT NULL,
   criteria JSONB NOT NULL,
+  tier VARCHAR(20) DEFAULT 'bronze',
+  xp_reward INTEGER DEFAULT 0,
+  category VARCHAR(50) DEFAULT 'general',
+  display_order INTEGER DEFAULT 0,
   is_active BOOLEAN DEFAULT true,
+  book_id INTEGER REFERENCES books(id) ON DELETE SET NULL,
+  created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   CONSTRAINT unique_badge_name UNIQUE(name),
-  CONSTRAINT badges_badge_type_check CHECK (badge_type IN ('checkpoint', 'quiz_mastery', 'book_completion', 'streak', 'custom'))
+  CONSTRAINT badges_badge_type_check CHECK (badge_type IN ('checkpoint', 'quiz_mastery', 'book_completion', 'book_completion_specific', 'streak', 'custom'))
 );
 
 -- Student badges earned
@@ -247,6 +259,46 @@ CREATE TABLE student_badges (
   quiz_id INTEGER REFERENCES quizzes(id) ON DELETE SET NULL,
   metadata JSONB,
   CONSTRAINT unique_student_badge_book UNIQUE(student_id, badge_id, book_id)
+);
+
+-- XP transactions (audit trail)
+CREATE TABLE xp_transactions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  student_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  amount INTEGER NOT NULL,
+  source VARCHAR(50) NOT NULL,
+  source_id TEXT,
+  description TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Reading challenges
+CREATE TABLE reading_challenges (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+  challenge_type VARCHAR(50) NOT NULL,
+  start_date DATE NOT NULL,
+  end_date DATE NOT NULL,
+  goal_criteria JSONB NOT NULL,
+  reward_xp INTEGER DEFAULT 0,
+  reward_badge_id UUID REFERENCES badges(id) ON DELETE SET NULL,
+  created_by_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT challenges_type_check CHECK (challenge_type IN ('daily', 'weekly', 'monthly', 'event', 'custom'))
+);
+
+-- Student challenge progress
+CREATE TABLE student_challenge_progress (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  student_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  challenge_id UUID NOT NULL REFERENCES reading_challenges(id) ON DELETE CASCADE,
+  progress JSONB DEFAULT '{}',
+  completed BOOLEAN DEFAULT false,
+  completed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT unique_student_challenge UNIQUE(student_id, challenge_id)
 );
 
 -- Login broadcasts (messages displayed on login screen)
@@ -429,6 +481,130 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+
+-- ============================================================================
+-- GAMIFICATION FUNCTIONS
+-- ============================================================================
+
+-- Calculate level from XP
+CREATE OR REPLACE FUNCTION calculate_level(xp_amount INTEGER)
+RETURNS INTEGER
+LANGUAGE plpgsql
+IMMUTABLE
+AS $$
+BEGIN
+  -- Formula: level = floor(sqrt(xp / 50)) + 1, capped at 100
+  RETURN LEAST(FLOOR(SQRT(xp_amount::FLOAT / 50)) + 1, 100);
+END;
+$$;
+
+-- Calculate XP needed for a specific level
+CREATE OR REPLACE FUNCTION xp_for_level(level_num INTEGER)
+RETURNS INTEGER
+LANGUAGE plpgsql
+IMMUTABLE
+AS $$
+BEGIN
+  -- Inverse of level formula: xp = 50 * (level - 1)^2
+  RETURN 50 * POWER(level_num - 1, 2);
+END;
+$$;
+
+-- Award XP to student
+CREATE OR REPLACE FUNCTION award_xp(
+  p_student_id UUID,
+  p_amount INTEGER,
+  p_source VARCHAR(50),
+  p_source_id TEXT DEFAULT NULL,
+  p_description TEXT DEFAULT NULL
+)
+RETURNS TABLE(new_xp INTEGER, new_level INTEGER, level_up BOOLEAN)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_current_xp INTEGER;
+  v_current_level INTEGER;
+  v_new_xp INTEGER;
+  v_new_level INTEGER;
+  v_leveled_up BOOLEAN;
+BEGIN
+  -- Get current XP and level
+  SELECT xp, level INTO v_current_xp, v_current_level
+  FROM profiles
+  WHERE id = p_student_id;
+
+  -- Calculate new XP and level
+  v_new_xp := v_current_xp + p_amount;
+  v_new_level := calculate_level(v_new_xp);
+  v_leveled_up := v_new_level > v_current_level;
+
+  -- Update profile
+  UPDATE profiles
+  SET xp = v_new_xp,
+      level = v_new_level,
+      updated_at = NOW()
+  WHERE id = p_student_id;
+
+  -- Record transaction
+  INSERT INTO xp_transactions (student_id, amount, source, source_id, description)
+  VALUES (p_student_id, p_amount, p_source, p_source_id, p_description);
+
+  -- Return results
+  RETURN QUERY SELECT v_new_xp, v_new_level, v_leveled_up;
+END;
+$$;
+
+-- Update reading streak
+CREATE OR REPLACE FUNCTION update_reading_streak(p_student_id UUID)
+RETURNS TABLE(current_streak INTEGER, is_new_streak BOOLEAN)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_last_read_date DATE;
+  v_current_streak INTEGER;
+  v_longest_streak INTEGER;
+  v_today DATE := CURRENT_DATE;
+  v_is_new_streak BOOLEAN := FALSE;
+BEGIN
+  -- Get current streak data
+  SELECT last_read_date, reading_streak, longest_streak
+  INTO v_last_read_date, v_current_streak, v_longest_streak
+  FROM profiles
+  WHERE id = p_student_id;
+
+  -- Calculate new streak
+  IF v_last_read_date IS NULL THEN
+    -- First time reading
+    v_current_streak := 1;
+    v_is_new_streak := TRUE;
+  ELSIF v_last_read_date = v_today THEN
+    -- Already read today, no change
+    v_is_new_streak := FALSE;
+  ELSIF v_last_read_date = v_today - INTERVAL '1 day' THEN
+    -- Read yesterday, continue streak
+    v_current_streak := v_current_streak + 1;
+    v_is_new_streak := TRUE;
+  ELSE
+    -- Streak broken, start over
+    v_current_streak := 1;
+    v_is_new_streak := TRUE;
+  END IF;
+
+  -- Update longest streak if necessary
+  v_longest_streak := GREATEST(v_longest_streak, v_current_streak);
+
+  -- Update profile
+  UPDATE profiles
+  SET reading_streak = v_current_streak,
+      longest_streak = v_longest_streak,
+      last_read_date = v_today,
+      updated_at = NOW()
+  WHERE id = p_student_id;
+
+  -- Return results
+  RETURN QUERY SELECT v_current_streak, v_is_new_streak;
+END;
+$$;
 
 -- ============================================================================
 -- PART 6: VIEWS
