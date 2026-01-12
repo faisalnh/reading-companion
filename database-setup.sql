@@ -29,7 +29,8 @@ CREATE TYPE book_access_level AS ENUM (
 
 -- Profiles table (extends auth.users)
 CREATE TABLE profiles (
-  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
   role user_role NOT NULL DEFAULT 'STUDENT',
   full_name TEXT,
   grade INT,
@@ -458,13 +459,13 @@ BEGIN
   END IF;
 
   -- Prevent duplicate profile creation
-  IF EXISTS (SELECT 1 FROM public.profiles WHERE id = NEW.id) THEN
+  IF EXISTS (SELECT 1 FROM public.profiles WHERE user_id = NEW.id) THEN
     RAISE NOTICE 'Profile already exists for user %', NEW.id;
     RETURN NEW;
   END IF;
 
   -- Create profile with safe defaults
-  INSERT INTO public.profiles (id, role, full_name)
+  INSERT INTO public.profiles (user_id, role, full_name)
   VALUES (
     NEW.id,
     'STUDENT', -- Default role (safe)
